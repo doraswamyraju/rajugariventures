@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-orange/10 rounded-full blur-[100px]" />
 
       <div className="max-w-[1800px] mx-auto px-6 md:px-12 relative z-10">
-        
+
         {/* Top CTA Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-24 pb-24 border-b border-white/5">
           <div className="max-w-3xl">
@@ -21,7 +21,7 @@ const Footer = () => {
               Ready to dominate your market? We engineer digital experiences that convert visitors into loyal customers.
             </p>
           </div>
-          <Link 
+          <Link
             to="/contact"
             className="group mt-12 md:mt-0 relative inline-flex items-center justify-center w-32 h-32 md:w-48 md:h-48 rounded-full bg-brand-orange text-black overflow-hidden transition-transform hover:scale-105"
           >
@@ -35,7 +35,7 @@ const Footer = () => {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-8 mb-24">
-          
+
           {/* Brand Column */}
           <div className="lg:col-span-4 space-y-8">
             <Link to="/" className="block">
@@ -48,9 +48,9 @@ const Footer = () => {
             </p>
             <div className="flex gap-4">
               {[Instagram, Twitter, Linkedin].map((Icon, i) => (
-                <a 
-                  key={i} 
-                  href="#" 
+                <a
+                  key={i}
+                  href="#"
                   className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-brand-orange hover:text-black hover:border-brand-orange transition-all duration-300 group"
                 >
                   <Icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -94,9 +94,9 @@ const Footer = () => {
             <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-                <input 
-                  type="email" 
-                  placeholder="Enter your email" 
+                <input
+                  type="email"
+                  placeholder="Enter your email"
                   className="w-full bg-black/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-orange transition-colors"
                 />
               </div>
@@ -110,16 +110,16 @@ const Footer = () => {
         {/* Contact Info Bar */}
         <div className="grid md:grid-cols-3 gap-8 py-12 border-t border-white/5">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-brand-orange">
+            <div className="w-10 h-10 min-w-10 rounded-full bg-white/5 flex items-center justify-center text-brand-orange">
               <MapPin className="w-5 h-5" />
             </div>
             <div>
               <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Headquarters</p>
-              <p className="font-medium">Hyderabad, India</p>
+              <p className="font-medium text-sm">Shop.No.38, 1st Floor, Tuda Complex, near Anna Canteen, Bairagi patteda, Tirupati, AP 517502</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-brand-orange">
+            <div className="w-10 h-10 min-w-10 rounded-full bg-white/5 flex items-center justify-center text-brand-orange">
               <Mail className="w-5 h-5" />
             </div>
             <div>
@@ -128,12 +128,12 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-brand-orange">
+            <div className="w-10 h-10 min-w-10 rounded-full bg-white/5 flex items-center justify-center text-brand-orange">
               <Phone className="w-5 h-5" />
             </div>
             <div>
               <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Call Us</p>
-              <p className="font-medium">+91 98765 43210</p>
+              <p className="font-medium">7997991101</p>
             </div>
           </div>
         </div>
