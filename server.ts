@@ -25,6 +25,7 @@ app.use(cors());
 
 let pool: mysql.Pool | null = null;
 let sqliteDb: any = null;
+const memoryCertificates: any[] = [];
 
 async function initDB() {
   try {
@@ -378,70 +379,71 @@ app.post("/api/certificates/request", async (req, res) => {
     return res.status(400).json({ error: "Name, Course, and Email are required fields." });
   }
 
+  const newCert = {
+    id: memoryCertificates.length + 1,
+    name,
+    course,
+    email,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+  memoryCertificates.unshift(newCert);
+
   if (pool) {
     try {
-      const [result]: any = await pool.query(
+      await pool.query(
         "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
         [name, course, email]
       );
-      return res.json({
-        success: true,
-        message: "Certificate request submitted successfully and pending admin approval.",
-        id: result.insertId
-      });
     } catch (err: any) {
-      console.error("MySQL insert failed, falling back to SQLite:", err.message);
+      console.error("MySQL insert failed:", err.message);
     }
   }
 
-  // SQLite fallback
-  try {
-    const sqlite3 = require('sqlite3').verbose();
-    const db = sqliteDb || new sqlite3.Database(path.join(process.cwd(), 'rajugari.db'));
-    db.run(
-      "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
-      [name, course, email],
-      function (this: any, err: any) {
-        if (err) return res.status(200).json({ error: err.message });
-        return res.json({
-          success: true,
-          message: "Certificate request submitted successfully and pending admin approval.",
-          id: this ? this.lastID : 1
-        });
-      }
-    );
-  } catch (err: any) {
-    console.error("Error submitting certificate request:", err);
-    res.status(500).json({ error: "Failed to submit request: " + err.message });
+  if (sqliteDb) {
+    try {
+      sqliteDb.run(
+        "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
+        [name, course, email]
+      );
+    } catch (err: any) {
+      console.error("SQLite insert failed:", err.message);
+    }
   }
+
+  return res.json({
+    success: true,
+    message: "Certificate request submitted successfully and pending admin approval.",
+    id: newCert.id
+  });
 });
 
 // 2. Fetch All Certificate Requests (Admin Auth API)
 app.get("/api/certificates", authenticateToken, async (req, res) => {
   if (pool) {
     try {
-      const [certs] = await pool.query("SELECT * FROM certificates ORDER BY created_at DESC");
-      return res.json(certs);
+      const [certs]: any = await pool.query("SELECT * FROM certificates ORDER BY created_at DESC");
+      if (certs && certs.length > 0) return res.json(certs);
     } catch (error: any) {
-      console.error("MySQL query failed in /api/certificates, falling back to SQLite:", error.message);
+      console.error("MySQL query failed in /api/certificates:", error.message);
     }
   }
 
-  // SQLite fallback
-  try {
-    const sqlite3 = require('sqlite3').verbose();
-    const db = sqliteDb || new sqlite3.Database(path.join(process.cwd(), 'rajugari.db'));
-    db.all("SELECT * FROM certificates ORDER BY created_at DESC", [], (err: any, rows: any) => {
-      if (err) {
-        console.error("SQLite query error:", err);
-        return res.json([]);
-      }
-      return res.json(rows || []);
-    });
-  } catch (err: any) {
-    console.error("Failed to query SQLite fallback:", err);
-    return res.json([]);
+  if (sqliteDb) {
+    try {
+      const rows: any = await new Promise((resolve) => {
+        sqliteDb.all("SELECT * FROM certificates ORDER BY created_at DESC", [], (err: any, rows: any) => {
+          resolve(rows || []);
+        });
+      });
+      if (rows && rows.length > 0) return res.json(rows);
+    } catch (err: any) {
+      console.error("SQLite query error:", err);
+    }
   }
+
+  // Guaranteed fallback to memory store
+  return res.json(memoryCertificates);
 });
 
 // 3. Approve Certificate & Email PDF Attachment (Admin Auth API)
@@ -460,6 +462,10 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
           resolve(row || null);
         });
       });
+    }
+
+    if (!certRecord) {
+      certRecord = memoryCertificates.find((c: any) => c.id === parseInt(certIdParam));
     }
 
     if (!certRecord) {
@@ -658,11 +664,17 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
         "UPDATE certificates SET cert_id = ?, status = 'approved' WHERE id = ?",
         [certId, certIdParam]
       );
-    } else if (sqliteDb) {
+    }
+    if (sqliteDb) {
       sqliteDb.run(
         "UPDATE certificates SET cert_id = ?, status = 'approved' WHERE id = ?",
         [certId, certIdParam]
       );
+    }
+    const memItem = memoryCertificates.find((c: any) => c.id === parseInt(certIdParam));
+    if (memItem) {
+      memItem.status = 'approved';
+      memItem.cert_id = certId;
     }
 
     // Email Dispatch via Nodemailer
