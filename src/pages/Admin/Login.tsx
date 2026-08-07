@@ -15,10 +15,14 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post('/api/auth/login', { username, password });
+      if (response.data.error) {
+        setError(response.data.error);
+        return;
+      }
       login(response.data.token);
       navigate('/admin/dashboard');
-    } catch (err) {
-      setError('Invalid credentials');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Invalid credentials');
     }
   };
 
