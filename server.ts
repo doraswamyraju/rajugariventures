@@ -439,10 +439,18 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
   const certIdParam = req.params.id;
 
   try {
-    if (!pool) return res.status(503).json({ error: "Database unavailable" });
+    let certRecord: any = null;
 
-    const [rows]: any = await pool.query("SELECT * FROM certificates WHERE id = ?", [certIdParam]);
-    const certRecord = rows[0];
+    if (pool) {
+      const [rows]: any = await pool.query("SELECT * FROM certificates WHERE id = ?", [certIdParam]);
+      certRecord = rows[0];
+    } else if (sqliteDb) {
+      certRecord = await new Promise((resolve) => {
+        sqliteDb.get("SELECT * FROM certificates WHERE id = ?", [certIdParam], (err: any, row: any) => {
+          resolve(row || null);
+        });
+      });
+    }
 
     if (!certRecord) {
       return res.status(404).json({ error: "Certificate request not found." });
@@ -635,10 +643,17 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
     const pdfBuffer = Buffer.from(pdfBytes);
 
     // Update database record to approved
-    await pool.query(
-      "UPDATE certificates SET cert_id = ?, status = 'approved' WHERE id = ?",
-      [certId, certIdParam]
-    );
+    if (pool) {
+      await pool.query(
+        "UPDATE certificates SET cert_id = ?, status = 'approved' WHERE id = ?",
+        [certId, certIdParam]
+      );
+    } else if (sqliteDb) {
+      sqliteDb.run(
+        "UPDATE certificates SET cert_id = ?, status = 'approved' WHERE id = ?",
+        [certId, certIdParam]
+      );
+    }
 
     // Email Dispatch via Nodemailer
     let emailSent = false;
@@ -708,9 +723,11 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
 // 4. Reject Certificate Request (Admin Auth API)
 app.post("/api/certificates/reject/:id", authenticateToken, async (req, res) => {
   try {
-    if (!pool) return res.status(503).json({ error: "Database unavailable" });
-
-    await pool.query("UPDATE certificates SET status = 'rejected' WHERE id = ?", [req.params.id]);
+    if (pool) {
+      await pool.query("UPDATE certificates SET status = 'rejected' WHERE id = ?", [req.params.id]);
+    } else if (sqliteDb) {
+      sqliteDb.run("UPDATE certificates SET status = 'rejected' WHERE id = ?", [req.params.id]);
+    }
     res.json({ success: true, message: "Certificate request rejected." });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
