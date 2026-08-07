@@ -690,8 +690,8 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
     let emailSent = false;
     const nodemailer = await import('nodemailer');
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
+    const smtpUser = process.env.SMTP_USER || 'rajugariventures@gmail.com';
+    const smtpPass = process.env.SMTP_PASS || 'BOHPM6139n@';
 
     if (smtpUser && smtpPass) {
       try {
@@ -732,11 +732,10 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
           ],
         });
         emailSent = true;
+        console.log(`Certificate PDF successfully emailed to ${email}`);
       } catch (mailErr) {
         console.error("Failed to send email via SMTP:", mailErr);
       }
-    } else {
-      console.log(`[SMTP Not Configured] Certificate approved for ${email} (${certId}). Email dispatch simulated.`);
     }
 
     res.json({
