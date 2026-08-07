@@ -113,11 +113,17 @@ async function initDB() {
     `);
 
     // Create default admin user if not exists
-    const [users]: any = await pool.query("SELECT * FROM users WHERE username = ?", ["admin"]);
+    const adminUser = "rajugariventures@gmail.com";
+    const adminPass = "BOHPM6139n@";
+    const [users]: any = await pool.query("SELECT * FROM users WHERE username = ?", [adminUser]);
     if (users.length === 0) {
-      const hashedPassword = bcrypt.hashSync("admin123", 10);
-      await pool.query("INSERT INTO users (username, password) VALUES (?, ?)", ["admin", hashedPassword]);
-      console.log("Default admin user created: admin / admin123");
+      const hashedPassword = bcrypt.hashSync(adminPass, 10);
+      await pool.query("INSERT INTO users (username, password) VALUES (?, ?)", [adminUser, hashedPassword]);
+      console.log(`Default admin user created: ${adminUser}`);
+    } else {
+      // Update existing admin password to match requested credential
+      const hashedPassword = bcrypt.hashSync(adminPass, 10);
+      await pool.query("UPDATE users SET password = ? WHERE username = ?", [hashedPassword, adminUser]);
     }
 
     console.log("Database initialized successfully.");

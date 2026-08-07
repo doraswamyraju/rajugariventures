@@ -32,9 +32,10 @@ const Login = () => {
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-mono uppercase tracking-widest mb-2 text-white/50">Username</label>
+            <label className="block text-sm font-mono uppercase tracking-widest mb-2 text-white/50">Username / Email</label>
             <input
               type="text"
+              placeholder="rajugariventures@gmail.com"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:border-brand-orange outline-none"
