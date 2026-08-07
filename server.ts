@@ -153,7 +153,7 @@ const authenticateToken = (req: any, res: any, next: any) => {
 
 // Auth
 app.post("/api/auth/login", async (req, res) => {
-  if (!pool) return res.status(503).json({ error: "Database unavailable" });
+  if (!pool) return res.status(200).json({ error: "Database unavailable. Please check server logs." });
   const { username, password } = req.body;
   try {
     const [rows]: any = await pool.query("SELECT * FROM users WHERE username = ?", [username]);
@@ -163,10 +163,10 @@ app.post("/api/auth/login", async (req, res) => {
       const token = jwt.sign({ username: user.username, id: user.id }, JWT_SECRET, { expiresIn: '24h' });
       res.json({ token });
     } else {
-      res.status(401).json({ error: "Invalid credentials" });
+      res.status(200).json({ error: "Invalid credentials" });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(200).json({ error: error.message });
   }
 });
 
