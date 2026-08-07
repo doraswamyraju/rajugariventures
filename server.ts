@@ -30,8 +30,8 @@ async function initDB() {
     pool = mysql.createPool({
       host: process.env.DB_HOST || "localhost",
       user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "rajugari_ventures",
+      password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "BOHPM6139n@",
+      database: process.env.DB_NAME || "skillsak_rajugariventures",
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0
