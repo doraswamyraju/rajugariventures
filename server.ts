@@ -107,6 +107,7 @@ async function initDB() {
         name VARCHAR(255),
         course VARCHAR(255),
         email VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -322,8 +323,8 @@ app.post("/api/generate-content", authenticateToken, async (req, res) => {
   }
 });
 
-// Digital Certificate Generation & Email Dispatch API
-app.post("/api/certificates/issue", async (req, res) => {
+// 1. Submit Certificate Request (User Public API)
+app.post("/api/certificates/request", async (req, res) => {
   const { name, course, email } = req.body;
 
   if (!name || !course || !email) {
@@ -331,8 +332,52 @@ app.post("/api/certificates/issue", async (req, res) => {
   }
 
   try {
-    const certId = `RJV-CERT-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+    if (!pool) return res.status(533).json({ error: "Database unavailable" });
+
+    const [result]: any = await pool.query(
+      "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
+      [name, course, email]
+    );
+
+    res.json({
+      success: true,
+      message: "Certificate request submitted successfully and pending admin approval.",
+      id: result.insertId
+    });
+  } catch (err: any) {
+    console.error("Error submitting certificate request:", err);
+    res.status(500).json({ error: "Failed to submit request: " + err.message });
+  }
+});
+
+// 2. Fetch All Certificate Requests (Admin Auth API)
+app.get("/api/certificates", authenticateToken, async (req, res) => {
+  if (!pool) return res.status(503).json([]);
+  try {
+    const [certs] = await pool.query("SELECT * FROM certificates ORDER BY created_at DESC");
+    res.json(certs);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3. Approve Certificate & Email PDF Attachment (Admin Auth API)
+app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) => {
+  const certIdParam = req.params.id;
+
+  try {
+    if (!pool) return res.status(503).json({ error: "Database unavailable" });
+
+    const [rows]: any = await pool.query("SELECT * FROM certificates WHERE id = ?", [certIdParam]);
+    const certRecord = rows[0];
+
+    if (!certRecord) {
+      return res.status(404).json({ error: "Certificate request not found." });
+    }
+
+    const certId = certRecord.cert_id || `RJV-CERT-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
     const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const { name, course, email } = certRecord;
 
     // Generate PDF using pdf-lib
     const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
@@ -455,7 +500,6 @@ app.post("/api/certificates/issue", async (req, res) => {
     });
 
     // Signatures & Footer
-    // Left: Date
     page.drawText("DATE OF ISSUANCE", {
       x: 70,
       y: 90,
@@ -513,27 +557,18 @@ app.post("/api/certificates/issue", async (req, res) => {
       color: goldAccent,
     });
 
-    // Save PDF as Buffer & Base64
+    // Save PDF as Buffer
     const pdfBytes = await pdfDoc.save();
     const pdfBuffer = Buffer.from(pdfBytes);
-    const pdfBase64 = pdfBuffer.toString('base64');
 
-    // Save into database if pool available
-    if (pool) {
-      try {
-        await pool.query(
-          "INSERT INTO certificates (cert_id, name, course, email) VALUES (?, ?, ?, ?)",
-          [certId, name, course, email]
-        );
-      } catch (dbErr) {
-        console.error("Failed to save certificate in DB:", dbErr);
-      }
-    }
+    // Update database record to approved
+    await pool.query(
+      "UPDATE certificates SET cert_id = ?, status = 'approved' WHERE id = ?",
+      [certId, certIdParam]
+    );
 
     // Email Dispatch via Nodemailer
     let emailSent = false;
-    let simulatedEmail = false;
-
     const nodemailer = await import('nodemailer');
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpUser = process.env.SMTP_USER;
@@ -554,17 +589,17 @@ app.post("/api/certificates/issue", async (req, res) => {
         await transporter.sendMail({
           from: `"Rajugari Ventures" <${smtpUser}>`,
           to: email,
-          subject: `Your Certificate of Completion - ${course}`,
-          text: `Dear ${name},\n\nCongratulations on completing the "${course}"! Please find your official digital certificate attached to this email.\n\nCertificate ID: ${certId}\n\nBest regards,\nRajugari Ventures Team`,
+          subject: `Your Approved Certificate of Completion - ${course}`,
+          text: `Dear ${name},\n\nCongratulations! Your certificate for "${course}" has been approved. Please find your official digital certificate attached to this email.\n\nCertificate ID: ${certId}\n\nBest regards,\nRajugari Ventures Team`,
           html: `
             <div style="font-family: Arial, sans-serif; background-color: #141417; color: #ffffff; padding: 30px; border-radius: 12px;">
               <h2 style="color: #E6A627;">Congratulations, ${name}!</h2>
-              <p>We are delighted to present your official <strong>Certificate of Completion</strong> for <strong>${course}</strong>.</p>
+              <p>Your request for the <strong>Certificate of Completion</strong> for <strong>${course}</strong> has been officially approved by our team.</p>
               <div style="background-color: #202025; padding: 15px; border-left: 4px solid #E6A627; margin: 20px 0; border-radius: 4px;">
                 <p style="margin: 0;"><strong>Certificate ID:</strong> ${certId}</p>
                 <p style="margin: 5px 0 0 0;"><strong>Date of Issue:</strong> ${issueDate}</p>
               </div>
-              <p>Your certificate is attached to this email as a high-resolution PDF document.</p>
+              <p>Your official PDF certificate is attached to this email.</p>
               <br/>
               <p style="color: #a0a0a0;">Warm regards,<br/><strong>Rajugari Ventures Team</strong></p>
             </div>
@@ -580,23 +615,32 @@ app.post("/api/certificates/issue", async (req, res) => {
         emailSent = true;
       } catch (mailErr) {
         console.error("Failed to send email via SMTP:", mailErr);
-        simulatedEmail = true;
       }
     } else {
-      console.log(`[SMTP Not Configured] Certificate generated for ${email} (${certId}). PDF base64 provided for direct download.`);
-      simulatedEmail = true;
+      console.log(`[SMTP Not Configured] Certificate approved for ${email} (${certId}). Email dispatch simulated.`);
     }
 
     res.json({
       success: true,
+      message: "Certificate approved and email dispatched.",
       certId,
-      emailSent,
-      simulatedEmail,
-      pdfBase64,
+      emailSent
     });
   } catch (err: any) {
-    console.error("Error issuing certificate:", err);
-    res.status(500).json({ error: "Failed to generate certificate: " + err.message });
+    console.error("Error approving certificate:", err);
+    res.status(500).json({ error: "Failed to approve certificate: " + err.message });
+  }
+});
+
+// 4. Reject Certificate Request (Admin Auth API)
+app.post("/api/certificates/reject/:id", authenticateToken, async (req, res) => {
+  try {
+    if (!pool) return res.status(503).json({ error: "Database unavailable" });
+
+    await pool.query("UPDATE certificates SET status = 'rejected' WHERE id = ?", [req.params.id]);
+    res.json({ success: true, message: "Certificate request rejected." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 
