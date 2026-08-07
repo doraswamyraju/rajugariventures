@@ -378,8 +378,8 @@ app.post("/api/certificates/request", async (req, res) => {
     return res.status(400).json({ error: "Name, Course, and Email are required fields." });
   }
 
-  try {
-    if (pool) {
+  if (pool) {
+    try {
       const [result]: any = await pool.query(
         "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
         [name, course, email]
@@ -389,26 +389,27 @@ app.post("/api/certificates/request", async (req, res) => {
         message: "Certificate request submitted successfully and pending admin approval.",
         id: result.insertId
       });
-    } else if (sqliteDb) {
-      sqliteDb.run(
-        "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
-        [name, course, email],
-        function (this: any, err: any) {
-          if (err) return res.status(200).json({ error: err.message });
-          return res.json({
-            success: true,
-            message: "Certificate request submitted successfully and pending admin approval.",
-            id: this.lastID
-          });
-        }
-      );
-    } else {
-      console.log(`[DB Offline] Certificate request received for ${name} (${email}) - ${course}`);
-      return res.json({
-        success: true,
-        message: "Certificate request received and pending admin approval."
-      });
+    } catch (err: any) {
+      console.error("MySQL insert failed, falling back to SQLite:", err.message);
     }
+  }
+
+  // SQLite fallback
+  try {
+    const sqlite3 = require('sqlite3').verbose();
+    const db = sqliteDb || new sqlite3.Database(path.join(process.cwd(), 'rajugari.db'));
+    db.run(
+      "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
+      [name, course, email],
+      function (this: any, err: any) {
+        if (err) return res.status(200).json({ error: err.message });
+        return res.json({
+          success: true,
+          message: "Certificate request submitted successfully and pending admin approval.",
+          id: this ? this.lastID : 1
+        });
+      }
+    );
   } catch (err: any) {
     console.error("Error submitting certificate request:", err);
     res.status(500).json({ error: "Failed to submit request: " + err.message });
@@ -422,14 +423,23 @@ app.get("/api/certificates", authenticateToken, async (req, res) => {
       const [certs] = await pool.query("SELECT * FROM certificates ORDER BY created_at DESC");
       return res.json(certs);
     } catch (error: any) {
-      return res.status(200).json([]);
+      console.error("MySQL query failed in /api/certificates, falling back to SQLite:", error.message);
     }
-  } else if (sqliteDb) {
-    sqliteDb.all("SELECT * FROM certificates ORDER BY created_at DESC", [], (err: any, rows: any) => {
-      if (err) return res.status(200).json([]);
+  }
+
+  // SQLite fallback
+  try {
+    const sqlite3 = require('sqlite3').verbose();
+    const db = sqliteDb || new sqlite3.Database(path.join(process.cwd(), 'rajugari.db'));
+    db.all("SELECT * FROM certificates ORDER BY created_at DESC", [], (err: any, rows: any) => {
+      if (err) {
+        console.error("SQLite query error:", err);
+        return res.json([]);
+      }
       return res.json(rows || []);
     });
-  } else {
+  } catch (err: any) {
+    console.error("Failed to query SQLite fallback:", err);
     return res.json([]);
   }
 });
