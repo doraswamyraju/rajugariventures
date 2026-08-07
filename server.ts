@@ -493,244 +493,76 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
     const page = pdfDoc.addPage([841.89, 595.28]);
     const { width, height } = page.getSize();
 
+    // Embed exact JPG Template Image from disk/public
+    const fs = await import('fs');
+    const templatePath = path.join(process.cwd(), 'public', 'certificate-template.jpg');
+    
+    if (fs.existsSync(templatePath)) {
+      const templateImageBytes = fs.readFileSync(templatePath);
+      const embeddedTemplate = await pdfDoc.embedJpg(templateImageBytes);
+      
+      // Draw background image filling the entire page exactly
+      page.drawImage(embeddedTemplate, {
+        x: 0,
+        y: 0,
+        width,
+        height,
+      });
+    }
+
     const fontSerifBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const fontSerifItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
     const fontSans = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSansBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    // Color Palette matching Vidyalai layout
     const navyDark = rgb(0.06, 0.12, 0.35); // Deep Navy Blue
-    const goldAccent = rgb(0.85, 0.65, 0.2); // Warm Gold
-    const textDark = rgb(0.12, 0.18, 0.28);
     const textGray = rgb(0.35, 0.4, 0.45);
 
-    // Clean white background
-    page.drawRectangle({
-      x: 0,
-      y: 0,
-      width,
-      height,
-      color: rgb(0.99, 0.99, 0.99),
-    });
-
-    // Top-Right Curved Navy Decorative Accent Shapes
-    page.drawCircle({
-      x: width + 40,
-      y: height + 40,
-      size: 180,
-      color: navyDark,
-    });
-    page.drawCircle({
-      x: width + 20,
-      y: height + 20,
-      size: 170,
-      color: goldAccent,
-    });
-    page.drawCircle({
-      x: width + 35,
-      y: height + 35,
-      size: 165,
-      color: navyDark,
-    });
-
-    // Bottom-Left Curved Navy Decorative Accent Shapes
-    page.drawCircle({
-      x: -40,
-      y: -40,
-      size: 180,
-      color: navyDark,
-    });
-    page.drawCircle({
-      x: -20,
-      y: -20,
-      size: 170,
-      color: goldAccent,
-    });
-    page.drawCircle({
-      x: -35,
-      y: -35,
-      size: 165,
-      color: navyDark,
-    });
-
-    // Top Institution Header (VIDYALAI IT & NON-IT TRAINING INSTITUTE)
-    const instName = "VIDYALAI";
-    const instNameWidth = fontSansBold.widthOfTextAtSize(instName, 26);
-    page.drawText(instName, {
-      x: (width - instNameWidth) / 2,
-      y: height - 85,
-      size: 26,
-      font: fontSansBold,
-      color: navyDark,
-    });
-
-    const instTagline = "IT & NON-IT TRAINING INSTITUTE";
-    const instTaglineWidth = fontSansBold.widthOfTextAtSize(instTagline, 12);
-    page.drawText(instTagline, {
-      x: (width - instTaglineWidth) / 2,
-      y: height - 105,
-      size: 12,
-      font: fontSansBold,
-      color: rgb(0.7, 0.15, 0.15), // Red highlight accent
-    });
-
-    const instSub = "LEARN TODAY. LEAD TOMORROW";
-    const instSubWidth = fontSans.widthOfTextAtSize(instSub, 8);
-    page.drawText(instSub, {
-      x: (width - instSubWidth) / 2,
-      y: height - 118,
-      size: 8,
-      font: fontSans,
-      color: textGray,
-    });
-
-    // Main Certificate Header
-    const certHeader = "CERTIFICATE";
-    const certHeaderWidth = fontSerifBold.widthOfTextAtSize(certHeader, 38);
-    page.drawText(certHeader, {
-      x: (width - certHeaderWidth) / 2,
-      y: height - 165,
-      size: 38,
-      font: fontSerifBold,
-      color: navyDark,
-    });
-
-    const certSubHeader = "OF GRADUATION";
-    const certSubHeaderWidth = fontSansBold.widthOfTextAtSize(certSubHeader, 16);
-    page.drawText(certSubHeader, {
-      x: (width - certSubHeaderWidth) / 2,
-      y: height - 190,
-      size: 16,
-      font: fontSansBold,
-      color: navyDark,
-    });
-
-    // Presentation text line
-    const textPresented = "THIS CERTIFICATE IS PROUDLY PRESENTED TO";
-    const presentedWidth = fontSansBold.widthOfTextAtSize(textPresented, 13);
-    page.drawText(textPresented, {
-      x: (width - presentedWidth) / 2,
-      y: height - 235,
-      size: 13,
-      font: fontSansBold,
-      color: textDark,
-    });
-
-    // Candidate Name
+    // 1. Candidate Name (Positioned cleanly on top of the template line)
     const candidateName = name.toUpperCase();
-    const nameWidth = fontSerifBold.widthOfTextAtSize(candidateName, 26);
+    const nameSize = candidateName.length > 25 ? 22 : 26;
+    const nameWidth = fontSerifBold.widthOfTextAtSize(candidateName, nameSize);
     page.drawText(candidateName, {
       x: (width - nameWidth) / 2,
-      y: height - 295,
-      size: 26,
+      y: 290,
+      size: nameSize,
       font: fontSerifBold,
       color: navyDark,
     });
 
-    // Clean Underline under Candidate Name
-    page.drawLine({
-      start: { x: (width - 450) / 2, y: height - 310 },
-      end: { x: (width + 450) / 2, y: height - 310 },
-      thickness: 1,
-      color: rgb(0.7, 0.7, 0.75),
-    });
-
-    // Course Completion Text
-    const courseText = `for successfully completing the specialized course in`;
-    const courseTextWidth = fontSerifItalic.widthOfTextAtSize(courseText, 14);
-    page.drawText(courseText, {
-      x: (width - courseTextWidth) / 2,
-      y: height - 345,
-      size: 14,
+    // 2. Course Details & Appreciation (Positioned directly below the name line)
+    const appreciationText = "for successfully completing the specialized course in";
+    const appreciationWidth = fontSerifItalic.widthOfTextAtSize(appreciationText, 13);
+    page.drawText(appreciationText, {
+      x: (width - appreciationWidth) / 2,
+      y: 245,
+      size: 13,
       font: fontSerifItalic,
       color: textGray,
     });
 
     const courseTitle = course;
-    const courseTitleWidth = fontSansBold.widthOfTextAtSize(courseTitle, 20);
+    const courseSize = courseTitle.length > 30 ? 17 : 20;
+    const courseTitleWidth = fontSansBold.widthOfTextAtSize(courseTitle, courseSize);
     page.drawText(courseTitle, {
       x: (width - courseTitleWidth) / 2,
-      y: height - 375,
-      size: 20,
+      y: 218,
+      size: courseSize,
       font: fontSansBold,
       color: navyDark,
     });
 
-    // Bottom Left Footer Logo Text (RAJUGARI VENTURES)
-    page.drawText("RAJUGARI VENTURES", {
-      x: 60,
-      y: 75,
-      size: 14,
-      font: fontSansBold,
-      color: textDark,
-    });
-    page.drawText("A Digital Marketing Agency", {
-      x: 60,
-      y: 62,
-      size: 9,
-      font: fontSans,
-      color: textGray,
-    });
-    page.drawText("We Create Your Digital Identity", {
-      x: 60,
-      y: 50,
-      size: 8,
-      font: fontSansBold,
-      color: rgb(0.85, 0.45, 0.1),
-    });
-
-    // Bottom Center Signatory Block (DORASWAMY RAJU M)
-    const sigNameStyle = "M.D.S.Raju";
-    const sigNameStyleWidth = fontSerifItalic.widthOfTextAtSize(sigNameStyle, 18);
-    page.drawText(sigNameStyle, {
-      x: (width - sigNameStyleWidth) / 2,
-      y: 110,
-      size: 18,
-      font: fontSerifItalic,
-      color: navyDark,
-    });
-
-    const sigOfficialName = "DORASWAMY RAJU M";
-    const sigOfficialNameWidth = fontSansBold.widthOfTextAtSize(sigOfficialName, 12);
-    page.drawText(sigOfficialName, {
-      x: (width - sigOfficialNameWidth) / 2,
-      y: 85,
-      size: 12,
-      font: fontSansBold,
-      color: textDark,
-    });
-
-    const sigTitle1 = "Director";
-    const sigTitle1Width = fontSans.widthOfTextAtSize(sigTitle1, 11);
-    page.drawText(sigTitle1, {
-      x: (width - sigTitle1Width) / 2,
-      y: 68,
-      size: 11,
-      font: fontSans,
-      color: textGray,
-    });
-
-    const sigTitle2 = "Rocksvel Pvt. Ltd.";
-    const sigTitle2Width = fontSans.widthOfTextAtSize(sigTitle2, 11);
-    page.drawText(sigTitle2, {
-      x: (width - sigTitle2Width) / 2,
-      y: 52,
-      size: 11,
-      font: fontSans,
-      color: textGray,
-    });
-
-    // Bottom Right Metadata (Certificate ID & Date)
+    // 3. Certificate Number & Issue Date (Positioned neatly in lower right section)
     page.drawText(`ID: ${certId}`, {
-      x: width - 200,
-      y: 70,
+      x: width - 210,
+      y: 65,
       size: 10,
       font: fontSansBold,
       color: navyDark,
     });
     page.drawText(`Date: ${issueDate}`, {
-      x: width - 200,
-      y: 55,
+      x: width - 210,
+      y: 50,
       size: 9,
       font: fontSans,
       color: textGray,
