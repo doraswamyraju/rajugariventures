@@ -672,8 +672,28 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  const net = await import("net");
+  const isPortAvailable = (port: number) => {
+    return new Promise((resolve) => {
+      const tester = net.createServer()
+        .once('error', () => resolve(false))
+        .once('listening', () => tester.once('close', () => resolve(true)).close())
+        .listen(port, '0.0.0.0');
+    });
+  };
+
+  let targetPort = PORT;
+  if (process.env.PORT) {
+    targetPort = parseInt(process.env.PORT);
+  } else {
+    while (!(await isPortAvailable(targetPort))) {
+      console.log(`Port ${targetPort} is in use, trying port ${targetPort + 1}...`);
+      targetPort++;
+    }
+  }
+
+  app.listen(targetPort, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${targetPort}`);
   });
 }
 
