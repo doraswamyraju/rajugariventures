@@ -10,7 +10,7 @@ import mysql from "mysql2/promise";
 
 const require = createRequire(import.meta.url);
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "rajugari-secret-key-change-in-prod";
 
 // Initialize Gemini AI
