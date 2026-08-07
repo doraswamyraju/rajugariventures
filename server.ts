@@ -389,6 +389,19 @@ app.post("/api/certificates/request", async (req, res) => {
         message: "Certificate request submitted successfully and pending admin approval.",
         id: result.insertId
       });
+    } else if (sqliteDb) {
+      sqliteDb.run(
+        "INSERT INTO certificates (name, course, email, status) VALUES (?, ?, ?, 'pending')",
+        [name, course, email],
+        function (this: any, err: any) {
+          if (err) return res.status(200).json({ error: err.message });
+          return res.json({
+            success: true,
+            message: "Certificate request submitted successfully and pending admin approval.",
+            id: this.lastID
+          });
+        }
+      );
     } else {
       console.log(`[DB Offline] Certificate request received for ${name} (${email}) - ${course}`);
       return res.json({
@@ -404,12 +417,20 @@ app.post("/api/certificates/request", async (req, res) => {
 
 // 2. Fetch All Certificate Requests (Admin Auth API)
 app.get("/api/certificates", authenticateToken, async (req, res) => {
-  if (!pool) return res.status(503).json([]);
-  try {
-    const [certs] = await pool.query("SELECT * FROM certificates ORDER BY created_at DESC");
-    res.json(certs);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  if (pool) {
+    try {
+      const [certs] = await pool.query("SELECT * FROM certificates ORDER BY created_at DESC");
+      return res.json(certs);
+    } catch (error: any) {
+      return res.status(200).json([]);
+    }
+  } else if (sqliteDb) {
+    sqliteDb.all("SELECT * FROM certificates ORDER BY created_at DESC", [], (err: any, rows: any) => {
+      if (err) return res.status(200).json([]);
+      return res.json(rows || []);
+    });
+  } else {
+    return res.json([]);
   }
 });
 
