@@ -8,12 +8,13 @@ import Services from './pages/Services';
 import Portfolio from './pages/Portfolio';
 import Process from './pages/Process';
 import Contact from './pages/Contact';
+import CertificateIssuance from './pages/CertificateIssuance';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/admin/login" />;
+  return isAuthenticated ? (children as React.ReactElement) : <Navigate to="/admin/login" />;
 };
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="portfolio" element={<Portfolio />} />
               <Route path="process" element={<Process />} />
               <Route path="contact" element={<Contact />} />
+              <Route path="certificate" element={<CertificateIssuance />} />
             </Route>
             
             {/* Admin Routes */}

@@ -100,6 +100,17 @@ async function initDB() {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS certificates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        cert_id VARCHAR(100) UNIQUE,
+        name VARCHAR(255),
+        course VARCHAR(255),
+        email VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create default admin user if not exists
     const [users]: any = await pool.query("SELECT * FROM users WHERE username = ?", ["admin"]);
     if (users.length === 0) {
@@ -308,6 +319,284 @@ app.post("/api/generate-content", authenticateToken, async (req, res) => {
   } catch (error: any) {
     console.error("AI Generation Error:", error);
     res.status(500).json({ error: "Failed to generate content" });
+  }
+});
+
+// Digital Certificate Generation & Email Dispatch API
+app.post("/api/certificates/issue", async (req, res) => {
+  const { name, course, email } = req.body;
+
+  if (!name || !course || !email) {
+    return res.status(400).json({ error: "Name, Course, and Email are required fields." });
+  }
+
+  try {
+    const certId = `RJV-CERT-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+    const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Generate PDF using pdf-lib
+    const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+    const pdfDoc = await PDFDocument.create();
+    
+    // Landscape A4 Page (841.89 x 595.28 points)
+    const page = pdfDoc.addPage([841.89, 595.28]);
+    const { width, height } = page.getSize();
+
+    const fontSerifBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const fontSerifItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
+    const fontSans = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontSansBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    // Color Palette
+    const bgDark = rgb(0.08, 0.08, 0.09); // #141417
+    const goldAccent = rgb(0.9, 0.65, 0.15); // #E6A627
+    const textWhite = rgb(1, 1, 1);
+    const textMuted = rgb(0.7, 0.7, 0.75);
+
+    // Dark Background Fill
+    page.drawRectangle({
+      x: 0,
+      y: 0,
+      width,
+      height,
+      color: bgDark,
+    });
+
+    // Decorative Double Border
+    page.drawRectangle({
+      x: 20,
+      y: 20,
+      width: width - 40,
+      height: height - 40,
+      borderColor: goldAccent,
+      borderWidth: 2,
+    });
+    page.drawRectangle({
+      x: 28,
+      y: 28,
+      width: width - 56,
+      height: height - 56,
+      borderColor: rgb(0.3, 0.3, 0.35),
+      borderWidth: 1,
+    });
+
+    // Header Logo Text
+    const headerTitle = "RAJUGARI VENTURES";
+    const headerWidth = fontSansBold.widthOfTextAtSize(headerTitle, 16);
+    page.drawText(headerTitle, {
+      x: (width - headerWidth) / 2,
+      y: height - 70,
+      size: 16,
+      font: fontSansBold,
+      color: goldAccent,
+    });
+
+    // Subtitle
+    const subTitle = "CERTIFICATE OF COMPLETION";
+    const subTitleWidth = fontSerifBold.widthOfTextAtSize(subTitle, 28);
+    page.drawText(subTitle, {
+      x: (width - subTitleWidth) / 2,
+      y: height - 120,
+      size: 28,
+      font: fontSerifBold,
+      color: textWhite,
+    });
+
+    // Attestation line
+    const textPresented = "This certificate is proudly awarded to";
+    const presentedWidth = fontSerifItalic.widthOfTextAtSize(textPresented, 16);
+    page.drawText(textPresented, {
+      x: (width - presentedWidth) / 2,
+      y: height - 175,
+      size: 16,
+      font: fontSerifItalic,
+      color: textMuted,
+    });
+
+    // Candidate Name
+    const candidateName = name.toUpperCase();
+    const nameWidth = fontSerifBold.widthOfTextAtSize(candidateName, 34);
+    page.drawText(candidateName, {
+      x: (width - nameWidth) / 2,
+      y: height - 235,
+      size: 34,
+      font: fontSerifBold,
+      color: goldAccent,
+    });
+
+    // Underline below name
+    page.drawLine({
+      start: { x: (width - Math.max(nameWidth, 300)) / 2, y: height - 245 },
+      end: { x: (width + Math.max(nameWidth, 300)) / 2, y: height - 245 },
+      thickness: 1.5,
+      color: goldAccent,
+    });
+
+    // Achievement text
+    const textCourse = `for successfully completing the specialized course in`;
+    const courseLabelWidth = fontSerifItalic.widthOfTextAtSize(textCourse, 15);
+    page.drawText(textCourse, {
+      x: (width - courseLabelWidth) / 2,
+      y: height - 290,
+      size: 15,
+      font: fontSerifItalic,
+      color: textMuted,
+    });
+
+    // Course Title
+    const courseTitle = course;
+    const courseWidth = fontSansBold.widthOfTextAtSize(courseTitle, 22);
+    page.drawText(courseTitle, {
+      x: (width - courseWidth) / 2,
+      y: height - 330,
+      size: 22,
+      font: fontSansBold,
+      color: textWhite,
+    });
+
+    // Signatures & Footer
+    // Left: Date
+    page.drawText("DATE OF ISSUANCE", {
+      x: 70,
+      y: 90,
+      size: 10,
+      font: fontSansBold,
+      color: textMuted,
+    });
+    page.drawText(issueDate, {
+      x: 70,
+      y: 70,
+      size: 12,
+      font: fontSans,
+      color: textWhite,
+    });
+
+    // Center: Authorizing Signatory
+    const sigName = "Doraswamy Raju";
+    const sigNameWidth = fontSerifItalic.widthOfTextAtSize(sigName, 18);
+    page.drawText(sigName, {
+      x: (width - sigNameWidth) / 2,
+      y: 85,
+      size: 18,
+      font: fontSerifItalic,
+      color: goldAccent,
+    });
+    page.drawLine({
+      start: { x: (width - 160) / 2, y: 75 },
+      end: { x: (width + 160) / 2, y: 75 },
+      thickness: 1,
+      color: rgb(0.4, 0.4, 0.45),
+    });
+    const sigTitle = "AUTHORIZED SIGNATORY";
+    const sigTitleWidth = fontSans.widthOfTextAtSize(sigTitle, 9);
+    page.drawText(sigTitle, {
+      x: (width - sigTitleWidth) / 2,
+      y: 60,
+      size: 9,
+      font: fontSans,
+      color: textMuted,
+    });
+
+    // Right: Verification ID
+    page.drawText("CERTIFICATE ID", {
+      x: width - 210,
+      y: 90,
+      size: 10,
+      font: fontSansBold,
+      color: textMuted,
+    });
+    page.drawText(certId, {
+      x: width - 210,
+      y: 70,
+      size: 12,
+      font: fontSans,
+      color: goldAccent,
+    });
+
+    // Save PDF as Buffer & Base64
+    const pdfBytes = await pdfDoc.save();
+    const pdfBuffer = Buffer.from(pdfBytes);
+    const pdfBase64 = pdfBuffer.toString('base64');
+
+    // Save into database if pool available
+    if (pool) {
+      try {
+        await pool.query(
+          "INSERT INTO certificates (cert_id, name, course, email) VALUES (?, ?, ?, ?)",
+          [certId, name, course, email]
+        );
+      } catch (dbErr) {
+        console.error("Failed to save certificate in DB:", dbErr);
+      }
+    }
+
+    // Email Dispatch via Nodemailer
+    let emailSent = false;
+    let simulatedEmail = false;
+
+    const nodemailer = await import('nodemailer');
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+
+    if (smtpUser && smtpPass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: parseInt(process.env.SMTP_PORT || '587'),
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `"Rajugari Ventures" <${smtpUser}>`,
+          to: email,
+          subject: `Your Certificate of Completion - ${course}`,
+          text: `Dear ${name},\n\nCongratulations on completing the "${course}"! Please find your official digital certificate attached to this email.\n\nCertificate ID: ${certId}\n\nBest regards,\nRajugari Ventures Team`,
+          html: `
+            <div style="font-family: Arial, sans-serif; background-color: #141417; color: #ffffff; padding: 30px; border-radius: 12px;">
+              <h2 style="color: #E6A627;">Congratulations, ${name}!</h2>
+              <p>We are delighted to present your official <strong>Certificate of Completion</strong> for <strong>${course}</strong>.</p>
+              <div style="background-color: #202025; padding: 15px; border-left: 4px solid #E6A627; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0;"><strong>Certificate ID:</strong> ${certId}</p>
+                <p style="margin: 5px 0 0 0;"><strong>Date of Issue:</strong> ${issueDate}</p>
+              </div>
+              <p>Your certificate is attached to this email as a high-resolution PDF document.</p>
+              <br/>
+              <p style="color: #a0a0a0;">Warm regards,<br/><strong>Rajugari Ventures Team</strong></p>
+            </div>
+          `,
+          attachments: [
+            {
+              filename: `Certificate_${name.replace(/\s+/g, '_')}_${certId}.pdf`,
+              content: pdfBuffer,
+              contentType: 'application/pdf',
+            },
+          ],
+        });
+        emailSent = true;
+      } catch (mailErr) {
+        console.error("Failed to send email via SMTP:", mailErr);
+        simulatedEmail = true;
+      }
+    } else {
+      console.log(`[SMTP Not Configured] Certificate generated for ${email} (${certId}). PDF base64 provided for direct download.`);
+      simulatedEmail = true;
+    }
+
+    res.json({
+      success: true,
+      certId,
+      emailSent,
+      simulatedEmail,
+      pdfBase64,
+    });
+  } catch (err: any) {
+    console.error("Error issuing certificate:", err);
+    res.status(500).json({ error: "Failed to generate certificate: " + err.message });
   }
 });
 
