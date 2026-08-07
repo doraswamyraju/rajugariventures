@@ -38,7 +38,8 @@ async function initDB() {
     });
 
     // Test connection
-    await pool.getConnection();
+    const conn = await pool.getConnection();
+    conn.release();
 
     // Initialize DB Schema
     await pool.query(`
@@ -127,9 +128,9 @@ async function initDB() {
     }
 
     console.log("Database initialized successfully.");
-  } catch (error) {
-    console.error("Failed to initialize database:", error);
-    pool = null; // Mark as null if initialization fails
+  } catch (error: any) {
+    console.warn("Notice: MySQL database connection failed. Server running in standalone API fallback mode:", error.message || error);
+    pool = null; // Mark as null if connection fails so server stays running
   }
 }
 
