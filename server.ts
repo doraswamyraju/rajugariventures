@@ -25,7 +25,16 @@ app.use(cors());
 
 let pool: mysql.Pool | null = null;
 let sqliteDb: any = null;
-const memoryCertificates: any[] = [];
+const memoryCertificates: any[] = [
+  {
+    id: 1,
+    name: "Doraswamy Raju",
+    course: "Full Stack Web Development Masterclass",
+    email: "doraswamyraju.ca@gmail.com",
+    status: "pending",
+    created_at: new Date().toISOString()
+  }
+];
 
 async function initDB() {
   try {
