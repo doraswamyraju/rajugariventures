@@ -23,6 +23,7 @@ if (!ai) {
 app.use(express.json());
 app.use(cors());
 
+let pool: mysql.Pool | null = null;
 let sqliteDb: any = null;
 
 async function initDB() {
