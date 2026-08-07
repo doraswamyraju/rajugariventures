@@ -33,13 +33,25 @@ git commit -m "Build and update for deployment"
 git push origin main
 ```
 
-### 3. Deploy via cPanel Git Version Control
+### 3. Deploy via Server SSH or cPanel Git Version Control
+
+#### Option A: Direct SSH Deployment (Recommended)
+Run the following exact command block in your SSH terminal:
+
+```bash
+cd /var/www/rajugariventures
+git pull origin main
+npm install --legacy-peer-deps
+```
+
+#### Option B: Deploy via cPanel Git Version Control
 1. Log into your cPanel account.
 2. Navigate to **Git Version Control**.
 3. Select the repository configured for `rajugariventures.com`.
 4. Click **Update from Remote** (or *Deploy HEAD Commit*) to pull the latest changes onto the live server.
 
-### 4. Important Notes on cPanel Configuration
-1. **Document Root / File Listings**: If you are seeing an `Index of /` with a list of files when visiting `rajugariventures.com`, it is because the root directory `public_html/` does not contain an `index.html` or the domain is not pointing to the `dist/` folder.
-2. **Setup Node.js App**: Because this project uses an Express backend (`server.ts`) for APIs and the database (`rajugari.db`), you **cannot** just serve `dist/` as a static HTML website. You must configure a **Node.js App** in cPanel that points to the repository's root, installs `node_modules`, and runs the backend server (using `npx tsx server.ts` or a compiled JS equivalent).
-3. If only the static site is needed, cPanel's Document Root for the domain should be updated to point directly to the `public_html/dist` folder (or wherever the repo is cloned, such as `/home/skillsak/repositories/rajugari-ventures/dist`).
+### 4. Server Location Reference
+- **Server Deployment Path**: `/var/www/rajugariventures`
+- **Database Location**: `/var/www/rajugariventures/rajugari.db`
+- **Static Assets Target**: `/home/skillsak/public_html/` (via `.cpanel.yml` or web server config pointing to `/var/www/rajugariventures/dist`).
+
