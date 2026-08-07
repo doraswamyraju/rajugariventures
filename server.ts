@@ -688,6 +688,7 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
 
     // Email Dispatch via Nodemailer
     let emailSent = false;
+    let emailError: string | null = null;
     const nodemailer = await import('nodemailer');
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpUser = process.env.SMTP_USER || 'rajugariventures@gmail.com';
@@ -733,16 +734,18 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
         });
         emailSent = true;
         console.log(`Certificate PDF successfully emailed to ${email}`);
-      } catch (mailErr) {
+      } catch (mailErr: any) {
+        emailError = mailErr.message || String(mailErr);
         console.error("Failed to send email via SMTP:", mailErr);
       }
     }
 
     res.json({
       success: true,
-      message: "Certificate approved and email dispatched.",
+      message: emailSent ? "Certificate approved and email dispatched." : `Certificate approved, but email failed: ${emailError}`,
       certId,
-      emailSent
+      emailSent,
+      emailError
     });
   } catch (err: any) {
     console.error("Error approving certificate:", err);
