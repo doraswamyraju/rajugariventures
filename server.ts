@@ -692,7 +692,7 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
     const nodemailer = await import('nodemailer');
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpUser = process.env.SMTP_USER || 'rajugariventures@gmail.com';
-    const smtpPass = process.env.SMTP_PASS || 'BOHPM6139n@';
+    const smtpPass = process.env.SMTP_PASS || 'crwd xezi sezl vbbu';
 
     if (smtpUser && smtpPass) {
       try {
