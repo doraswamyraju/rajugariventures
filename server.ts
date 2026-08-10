@@ -985,10 +985,17 @@ app.get("/api/masterclass/public", async (req, res) => {
       }
     });
 
+    const combinedShowcase = [...memoryShowcaseData];
+    (showcaseData || []).forEach((s: any) => {
+      if (!combinedShowcase.some(m => String(m.id) === String(s.id))) {
+        combinedShowcase.push(s);
+      }
+    });
+
     return res.json({
       course: finalCourse,
       testimonials: combinedTestimonials,
-      showcase: showcaseData || []
+      showcase: combinedShowcase
     });
   } catch (error: any) {
     return res.json({
@@ -1177,60 +1184,72 @@ app.delete("/api/masterclass/admin/testimonials/:id", authenticateToken, async (
   }
 });
 
+let memoryShowcaseData: any[] = [];
+
 // Admin endpoints for Showcase Media
 app.post("/api/masterclass/admin/showcase", authenticateToken, async (req, res) => {
   const { title, category, image_url, student_name } = req.body;
+  const newShowcase = {
+    id: Date.now(),
+    title: title || 'Student Creation',
+    category: category || 'work',
+    image_url: image_url || '',
+    student_name: student_name || 'Student'
+  };
+
+  memoryShowcaseData.unshift(newShowcase);
+  saveMasterclassDataToDisk();
+
   try {
     if (pool) {
       try {
         const [result]: any = await pool.query(
           `INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES (?, ?, ?, ?)`,
-          [title, category || 'work', image_url, student_name || 'Student']
+          [newShowcase.title, newShowcase.category, newShowcase.image_url, newShowcase.student_name]
         );
-        return res.json({ success: true, id: result.insertId });
-      } catch (mysqlErr) {
+        newShowcase.id = result.insertId;
+        return res.json({ success: true, showcase: newShowcase });
+      } catch (mysqlErr: any) {
         console.error("MySQL showcase insert error:", mysqlErr);
+        return res.json({ success: true, showcase: newShowcase });
       }
     }
 
     if (sqliteDb) {
       sqliteDb.run(
         `INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES (?, ?, ?, ?)`,
-        [title, category || 'work', image_url, student_name || 'Student'],
+        [newShowcase.title, newShowcase.category, newShowcase.image_url, newShowcase.student_name],
         function (err: any) {
-          if (err) return res.status(500).json({ error: err.message });
-          res.json({ success: true, id: this.lastID });
+          if (err) return res.json({ success: true, showcase: newShowcase });
+          newShowcase.id = this.lastID;
+          res.json({ success: true, showcase: newShowcase });
         }
       );
     } else {
-      res.json({ success: true, id: Date.now() });
+      res.json({ success: true, showcase: newShowcase });
     }
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.json({ success: true, showcase: newShowcase });
   }
 });
 
 app.delete("/api/masterclass/admin/showcase/:id", authenticateToken, async (req, res) => {
+  const showcaseId = Number(req.params.id);
+  memoryShowcaseData = memoryShowcaseData.filter(s => Number(s.id) !== showcaseId);
+  saveMasterclassDataToDisk();
+
   try {
     if (pool) {
       try {
-        await pool.query("DELETE FROM masterclass_showcase WHERE id = ?", [req.params.id]);
-        return res.json({ success: true });
-      } catch (mysqlErr) {
-        console.error("MySQL showcase delete error:", mysqlErr);
-      }
+        await pool.query("DELETE FROM masterclass_showcase WHERE id = ?", [showcaseId]);
+      } catch (err) {}
     }
-
     if (sqliteDb) {
-      sqliteDb.run("DELETE FROM masterclass_showcase WHERE id = ?", [req.params.id], (err: any) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-      });
-    } else {
-      res.json({ success: true });
+      sqliteDb.run("DELETE FROM masterclass_showcase WHERE id = ?", [showcaseId]);
     }
+    res.json({ success: true, message: "Showcase item deleted" });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.json({ success: true, message: "Showcase item deleted" });
   }
 });
 

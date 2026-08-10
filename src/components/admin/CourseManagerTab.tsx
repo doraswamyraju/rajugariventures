@@ -155,7 +155,10 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
     setSavingShowcase(true);
     setSaveMsg(null);
     try {
-      await axios.post('/api/masterclass/admin/showcase', newShowcase, getAuthHeaders());
+      const res = await axios.post('/api/masterclass/admin/showcase', newShowcase, getAuthHeaders());
+      if (res.data.showcase) {
+        setShowcase(prev => [res.data.showcase, ...prev.filter(s => s.id !== res.data.showcase.id)]);
+      }
       setNewShowcase({ title: '', category: 'work', image_url: '', student_name: '' });
       setSaveMsg({ text: '✓ Showcase item added successfully!' });
       fetchMasterclassData();
@@ -171,6 +174,8 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
     if (!window.confirm('Delete this showcase item?')) return;
     try {
       await axios.delete(`/api/masterclass/admin/showcase/${id}`, getAuthHeaders());
+      setShowcase(prev => prev.filter(s => s.id !== id));
+      setSaveMsg({ text: '✓ Showcase item deleted.' });
       fetchMasterclassData();
     } catch (err) {
       console.error(err);
