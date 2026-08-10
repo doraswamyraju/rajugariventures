@@ -113,10 +113,9 @@ export default function AIMasterclass() {
       {/* TOP BRAND BAR */}
       <header className="border-b border-white/10 bg-black/60 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-display font-black text-brand-orange tracking-wider">RAJUGARI VENTURES</span>
-            <span className="hidden sm:inline-block text-[11px] font-mono text-white/50 border-l border-white/20 pl-3">A Digital Marketing Agency</span>
-          </div>
+          <Link to="/" className="flex items-center gap-3">
+            <img src="/images/rajugari-ventures-logo.jpg" alt="Rajugari Ventures" className="h-10 md:h-12 object-contain bg-white rounded-lg px-2.5 py-1 shadow-xl hover:scale-105 transition-transform" />
+          </Link>
 
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-3 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">

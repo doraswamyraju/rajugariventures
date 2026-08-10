@@ -37,12 +37,7 @@ const Navbar = () => {
         )}>
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group cursor-pointer z-50">
-            <div className="w-10 h-10 bg-brand-orange flex items-center justify-center text-black font-bold rounded-full group-hover:rotate-[15deg] transition-transform duration-500">
-              <Zap className="w-5 h-5 fill-black" />
-            </div>
-            <span className="text-xl font-display font-bold tracking-tighter uppercase hidden md:block">
-              Rajugari <span className="text-brand-orange">Ventures</span>
-            </span>
+            <img src="/images/rajugari-ventures-logo.jpg" alt="Rajugari Ventures" className="h-10 md:h-12 object-contain bg-white rounded-lg px-2.5 py-1 shadow-xl hover:scale-105 transition-transform" />
           </Link>
 
           {/* Desktop Navigation */}

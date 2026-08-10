@@ -38,10 +38,8 @@ const Footer = () => {
 
           {/* Brand Column */}
           <div className="lg:col-span-4 space-y-8">
-            <Link to="/" className="block">
-              <span className="text-3xl font-display font-bold uppercase tracking-tighter">
-                Rajugari <span className="text-brand-orange">.</span>
-              </span>
+            <Link to="/" className="inline-block">
+              <img src="/images/rajugari-ventures-logo.jpg" alt="Rajugari Ventures" className="h-12 md:h-14 object-contain bg-white rounded-xl px-3 py-1.5 shadow-xl hover:scale-105 transition-transform" />
             </Link>
             <p className="text-white/50 leading-relaxed max-w-sm">
               A boutique digital laboratory specializing in high-performance web architecture, AI integration, and growth marketing.
