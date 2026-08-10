@@ -124,7 +124,10 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
     setSavingTestimonial(true);
     setSaveMsg(null);
     try {
-      await axios.post('/api/masterclass/admin/testimonials', newTestimonial, getAuthHeaders());
+      const res = await axios.post('/api/masterclass/admin/testimonials', newTestimonial, getAuthHeaders());
+      if (res.data.testimonial) {
+        setTestimonials(prev => [res.data.testimonial, ...prev.filter(t => t.id !== res.data.testimonial.id)]);
+      }
       setNewTestimonial({ name: '', role: 'Student', rating: 5, type: 'video', media_url: '', review_text: '' });
       setSaveMsg({ text: '✓ Testimonial added successfully!' });
       fetchMasterclassData();

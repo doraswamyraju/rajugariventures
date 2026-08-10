@@ -118,9 +118,11 @@ export default function AIMasterclass() {
             <span className="hidden sm:inline-block text-[11px] font-mono text-white/50 border-l border-white/20 pl-3">A Digital Marketing Agency</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
-              <ShieldCheck className="w-4 h-4" /> ISO Certified & MSME Registered
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
+              <img src="/images/trust-logos/iso-certified.png" alt="ISO 9001:2015 Certified" className="h-6 object-contain bg-white px-1 py-0.5 rounded" />
+              <img src="/images/trust-logos/startup-india.png" alt="Startup India" className="h-6 object-contain bg-white px-1 py-0.5 rounded" />
+              <img src="/images/trust-logos/msme.png" alt="MSME Registered" className="h-6 object-contain bg-white px-1 py-0.5 rounded" />
             </div>
             <button
               onClick={handleEnrollClick}
@@ -257,10 +259,10 @@ export default function AIMasterclass() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6 font-mono text-xs text-white/60">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-brand-orange" /> ISO Certified</span>
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-brand-orange" /> MSME Registered</span>
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-brand-orange" /> #startupindia</span>
+            <div className="flex flex-wrap items-center gap-4 sm:gap-8 bg-black/40 px-6 py-3 rounded-2xl border border-white/10 shadow-lg">
+              <img src="/images/trust-logos/iso-certified.png" alt="ISO 9001:2015 Certified" className="h-8 md:h-10 object-contain bg-white px-2 py-1 rounded-lg" />
+              <img src="/images/trust-logos/startup-india.png" alt="Startup India" className="h-8 md:h-10 object-contain bg-white px-2 py-1 rounded-lg" />
+              <img src="/images/trust-logos/msme.png" alt="MSME Micro Small & Medium Enterprises" className="h-8 md:h-10 object-contain bg-white px-2 py-1 rounded-lg" />
             </div>
           </div>
         </div>
