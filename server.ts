@@ -162,6 +162,94 @@ async function initDB() {
       await pool.query("UPDATE users SET password = ? WHERE username = ?", [hashedPassword, adminUser]);
     }
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS masterclass_course (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title TEXT,
+        subtitle TEXT,
+        actual_price INT,
+        offer_price INT,
+        start_date VARCHAR(255),
+        timings VARCHAR(255),
+        zoom_link TEXT,
+        whatsapp_link TEXT,
+        trainer_name VARCHAR(255),
+        trainer_role VARCHAR(255),
+        trainer_bio TEXT,
+        trainer_image TEXT,
+        trainer_reel_url TEXT,
+        trainer_experience VARCHAR(255),
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS masterclass_testimonials (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255),
+        role VARCHAR(255),
+        rating INT,
+        type VARCHAR(50),
+        media_url TEXT,
+        review_text TEXT,
+        avatar TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS masterclass_showcase (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255),
+        category VARCHAR(50),
+        image_url TEXT,
+        student_name VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS masterclass_registrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255),
+        email VARCHAR(255),
+        phone VARCHAR(100),
+        whatsapp VARCHAR(100),
+        amount INT,
+        payment_id VARCHAR(255),
+        order_id VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'success',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed MySQL default course if empty
+    const [courses]: any = await pool.query("SELECT COUNT(*) as count FROM masterclass_course");
+    if (courses[0].count === 0) {
+      await pool.query(`INSERT INTO masterclass_course (id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link, trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience)
+        VALUES (1, 'AI PRODUCTIVITY MASTERCLASS', 'From Casual AI User to AI Power User in 5 Days', 1499, 499, '17th August 2026', '6:00 PM to 7:00 PM Daily', 'https://zoom.us/j/sample-masterclass', 'https://chat.whatsapp.com/sample-masterclass', 'Doraswamy Raju', 'Founder, Rajugari Ventures | AI & Automation Specialist', 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', '5+ Years Experience | 10,000+ Students Trained')`);
+    }
+
+    // Seed MySQL sample testimonials if empty
+    const [testCount]: any = await pool.query("SELECT COUNT(*) as count FROM masterclass_testimonials");
+    if (testCount[0].count === 0) {
+      await pool.query(`INSERT INTO masterclass_testimonials (name, role, rating, type, media_url, review_text) VALUES 
+        ('K. Sai Kumar', 'Business Owner', 5, 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'This 5-day bootcamp completely transformed how I handle daily office reports and social media marketing!'),
+        ('M. Rajesh', 'Freelance Designer', 5, 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'Learning prompt engineering saved me 15+ hours every week. High quality practical sessions!'),
+        ('P. Anusha', 'Software Job Seeker', 5, 'text', '', 'The career day gave me resume building prompts that got me 3 interview calls within a week! Highly recommended.'),
+        ('V. Naresh', 'Marketing Executive', 5, 'text', '', 'Best ₹499 invested. Automated our entire email workflow and social media scripts.')`);
+    }
+
+    // Seed MySQL sample showcase if empty
+    const [showCount]: any = await pool.query("SELECT COUNT(*) as count FROM masterclass_showcase");
+    if (showCount[0].count === 0) {
+      await pool.query(`INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES
+        ('AI Generated Product Banner', 'work', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80', 'M. Rajesh'),
+        ('Certificate Handover Batch #1', 'certificate', 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80', 'Batch #1 Graduates'),
+        ('Social Media Ad Copy & Graphic', 'work', 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80', 'K. Sai Kumar'),
+        ('Masterclass Completion Ceremony', 'certificate', 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80', 'Tirupati Center')`);
+    }
+
     console.log("MySQL Database initialized successfully.");
   } catch (error: any) {
     console.warn("Notice: MySQL connection failed. Initializing File Database (SQLite) fallback...");
@@ -781,21 +869,21 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
 // Public endpoint to get full landing page content
 app.get("/api/masterclass/public", async (req, res) => {
   try {
-    if (sqliteDb) {
+    if (pool) {
+      const [courses]: any = await pool.query("SELECT * FROM masterclass_course WHERE id = 1");
+      const [testimonials]: any = await pool.query("SELECT * FROM masterclass_testimonials ORDER BY id DESC");
+      const [showcase]: any = await pool.query("SELECT * FROM masterclass_showcase ORDER BY id DESC");
+      return res.json({
+        course: courses[0] || null,
+        testimonials: testimonials || [],
+        showcase: showcase || []
+      });
+    } else if (sqliteDb) {
       sqliteDb.get("SELECT * FROM masterclass_course WHERE id = 1", (err: any, course: any) => {
         sqliteDb.all("SELECT * FROM masterclass_testimonials ORDER BY id DESC", (err2: any, testimonials: any) => {
           sqliteDb.all("SELECT * FROM masterclass_showcase ORDER BY id DESC", (err3: any, showcase: any) => {
             res.json({
-              course: course || {
-                title: "AI PRODUCTIVITY MASTERCLASS",
-                subtitle: "From Casual AI User to AI Power User in 5 Days",
-                actual_price: 1499,
-                offer_price: 499,
-                start_date: "17th August 2026",
-                timings: "6:00 PM to 7:00 PM Daily",
-                zoom_link: "https://zoom.us/j/sample-masterclass",
-                whatsapp_link: "https://chat.whatsapp.com/sample-masterclass"
-              },
+              course: course || null,
               testimonials: testimonials || [],
               showcase: showcase || []
             });
@@ -803,20 +891,7 @@ app.get("/api/masterclass/public", async (req, res) => {
         });
       });
     } else {
-      res.json({
-        course: {
-          title: "AI PRODUCTIVITY MASTERCLASS",
-          subtitle: "From Casual AI User to AI Power User in 5 Days",
-          actual_price: 1499,
-          offer_price: 499,
-          start_date: "17th August 2026",
-          timings: "6:00 PM to 7:00 PM Daily",
-          zoom_link: "https://zoom.us/j/sample-masterclass",
-          whatsapp_link: "https://chat.whatsapp.com/sample-masterclass"
-        },
-        testimonials: [],
-        showcase: []
-      });
+      res.json({ course: null, testimonials: [], showcase: [] });
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -830,7 +905,19 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
     trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience 
   } = req.body;
   try {
-    if (sqliteDb) {
+    if (pool) {
+      await pool.query(
+        `UPDATE masterclass_course SET 
+          title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?,
+          trainer_name = ?, trainer_role = ?, trainer_bio = ?, trainer_image = ?, trainer_reel_url = ?, trainer_experience = ?
+          WHERE id = 1`,
+        [
+          title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
+          trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
+        ]
+      );
+      return res.json({ success: true, message: "Course & Trainer settings updated successfully!" });
+    } else if (sqliteDb) {
       sqliteDb.run(
         `UPDATE masterclass_course SET 
           title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?,
@@ -876,7 +963,13 @@ app.post("/api/upload", authenticateToken, upload.single("file"), (req: any, res
 app.post("/api/masterclass/admin/testimonials", authenticateToken, async (req, res) => {
   const { name, role, rating, type, media_url, review_text, avatar } = req.body;
   try {
-    if (sqliteDb) {
+    if (pool) {
+      const [result]: any = await pool.query(
+        `INSERT INTO masterclass_testimonials (name, role, rating, type, media_url, review_text, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, role, rating || 5, type || 'text', media_url || '', review_text || '', avatar || '']
+      );
+      return res.json({ success: true, id: result.insertId });
+    } else if (sqliteDb) {
       sqliteDb.run(
         `INSERT INTO masterclass_testimonials (name, role, rating, type, media_url, review_text, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [name, role, rating || 5, type || 'text', media_url || '', review_text || '', avatar || ''],
@@ -885,6 +978,8 @@ app.post("/api/masterclass/admin/testimonials", authenticateToken, async (req, r
           res.json({ success: true, id: this.lastID });
         }
       );
+    } else {
+      res.json({ success: true, id: Date.now() });
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -893,11 +988,16 @@ app.post("/api/masterclass/admin/testimonials", authenticateToken, async (req, r
 
 app.delete("/api/masterclass/admin/testimonials/:id", authenticateToken, async (req, res) => {
   try {
-    if (sqliteDb) {
+    if (pool) {
+      await pool.query("DELETE FROM masterclass_testimonials WHERE id = ?", [req.params.id]);
+      return res.json({ success: true });
+    } else if (sqliteDb) {
       sqliteDb.run("DELETE FROM masterclass_testimonials WHERE id = ?", [req.params.id], (err: any) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
       });
+    } else {
+      res.json({ success: true });
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -908,7 +1008,13 @@ app.delete("/api/masterclass/admin/testimonials/:id", authenticateToken, async (
 app.post("/api/masterclass/admin/showcase", authenticateToken, async (req, res) => {
   const { title, category, image_url, student_name } = req.body;
   try {
-    if (sqliteDb) {
+    if (pool) {
+      const [result]: any = await pool.query(
+        `INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES (?, ?, ?, ?)`,
+        [title, category || 'work', image_url, student_name || 'Student']
+      );
+      return res.json({ success: true, id: result.insertId });
+    } else if (sqliteDb) {
       sqliteDb.run(
         `INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES (?, ?, ?, ?)`,
         [title, category || 'work', image_url, student_name || 'Student'],
@@ -917,6 +1023,8 @@ app.post("/api/masterclass/admin/showcase", authenticateToken, async (req, res) 
           res.json({ success: true, id: this.lastID });
         }
       );
+    } else {
+      res.json({ success: true, id: Date.now() });
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -925,11 +1033,16 @@ app.post("/api/masterclass/admin/showcase", authenticateToken, async (req, res) 
 
 app.delete("/api/masterclass/admin/showcase/:id", authenticateToken, async (req, res) => {
   try {
-    if (sqliteDb) {
+    if (pool) {
+      await pool.query("DELETE FROM masterclass_showcase WHERE id = ?", [req.params.id]);
+      return res.json({ success: true });
+    } else if (sqliteDb) {
       sqliteDb.run("DELETE FROM masterclass_showcase WHERE id = ?", [req.params.id], (err: any) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
       });
+    } else {
+      res.json({ success: true });
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -940,7 +1053,6 @@ app.delete("/api/masterclass/admin/showcase/:id", authenticateToken, async (req,
 app.post("/api/masterclass/create-order", async (req, res) => {
   const { amount, name, email, phone } = req.body;
   try {
-    // Generate order ID
     const orderId = "order_mc_" + Date.now();
     res.json({
       orderId,
@@ -956,15 +1068,23 @@ app.post("/api/masterclass/create-order", async (req, res) => {
 app.post("/api/masterclass/verify-payment", async (req, res) => {
   const { name, email, phone, whatsapp, amount, payment_id, order_id } = req.body;
   try {
-    if (sqliteDb) {
+    if (pool) {
+      await pool.query(
+        `INSERT INTO masterclass_registrations (name, email, phone, whatsapp, amount, payment_id, order_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'success')`,
+        [name, email, phone, whatsapp || phone, amount || 499, payment_id || ('pay_' + Date.now()), order_id || 'direct']
+      );
+      const [rows]: any = await pool.query("SELECT zoom_link, whatsapp_link FROM masterclass_course WHERE id = 1");
+      return res.json({
+        success: true,
+        message: "Registration successful!",
+        zoomLink: rows[0]?.zoom_link || "https://zoom.us/j/sample-masterclass",
+        whatsappLink: rows[0]?.whatsapp_link || "https://chat.whatsapp.com/sample-masterclass"
+      });
+    } else if (sqliteDb) {
       sqliteDb.run(
         `INSERT INTO masterclass_registrations (name, email, phone, whatsapp, amount, payment_id, order_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'success')`,
-        [name, email, phone, whatsapp || phone, amount || 499, payment_id || ('pay_' + Date.now()), order_id || 'direct'],
-        function (err: any) {
-          if (err) console.error("Error inserting registration:", err);
-        }
+        [name, email, phone, whatsapp || phone, amount || 499, payment_id || ('pay_' + Date.now()), order_id || 'direct']
       );
-
       sqliteDb.get("SELECT zoom_link, whatsapp_link FROM masterclass_course WHERE id = 1", (err: any, row: any) => {
         res.json({
           success: true,
@@ -989,7 +1109,10 @@ app.post("/api/masterclass/verify-payment", async (req, res) => {
 // Admin endpoint to view registrations
 app.get("/api/masterclass/admin/registrations", authenticateToken, async (req, res) => {
   try {
-    if (sqliteDb) {
+    if (pool) {
+      const [rows]: any = await pool.query("SELECT * FROM masterclass_registrations ORDER BY id DESC");
+      return res.json(rows || []);
+    } else if (sqliteDb) {
       sqliteDb.all("SELECT * FROM masterclass_registrations ORDER BY id DESC", (err: any, rows: any) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows || []);
