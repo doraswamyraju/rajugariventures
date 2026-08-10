@@ -565,22 +565,31 @@ export default function AIMasterclass() {
 
       {/* VIDEO MODAL */}
       {activeVideoModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-white/20 rounded-3xl w-full max-w-3xl overflow-hidden relative">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-white/20 rounded-3xl w-full max-w-4xl overflow-hidden relative shadow-2xl">
             <button
               onClick={() => setActiveVideoModal(null)}
-              className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-white/20 z-10"
+              className="absolute top-4 right-4 bg-black/70 text-white p-2 rounded-full hover:bg-brand-orange hover:text-black z-20 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
-            <div className="aspect-video w-full">
-              <iframe
-                src={activeVideoModal}
-                title="Student Video Testimonial"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+            <div className="aspect-video w-full bg-black flex items-center justify-center">
+              {activeVideoModal.includes('/uploads/') || activeVideoModal.endsWith('.mp4') || activeVideoModal.endsWith('.webm') || activeVideoModal.endsWith('.mov') ? (
+                <video
+                  src={activeVideoModal}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <iframe
+                  src={activeVideoModal}
+                  title="Video Player"
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
             </div>
           </div>
         </div>
