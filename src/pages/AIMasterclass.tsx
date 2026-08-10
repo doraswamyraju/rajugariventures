@@ -493,37 +493,66 @@ export default function AIMasterclass() {
       {/* STUDENT REVIEWS & VIDEO TESTIMONIALS */}
       <section className="py-20 bg-white/[0.02] border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 space-y-12">
+          
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="text-xs font-mono uppercase tracking-widest text-brand-orange font-bold bg-brand-orange/10 px-3 py-1 rounded-full border border-brand-orange/20">
-              Student Experiences
-            </span>
+            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/15 px-4 py-1.5 rounded-full">
+              <span className="flex text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400" />
+                ))}
+              </span>
+              <span className="text-xs font-mono text-white/90 font-bold uppercase tracking-wider">
+                Google 5.0 Rated Masterclass
+              </span>
+            </div>
             <h2 className="text-3xl md:text-5xl font-display font-black uppercase">What Our Students Say</h2>
+            <p className="text-sm text-white/60 font-mono">Real feedback from business owners, freelancers, and professionals</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {testimonials.map((t) => (
-              <div key={t.id} className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 space-y-4 relative">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-white text-lg">{t.name}</h4>
-                    <span className="text-xs font-mono text-brand-orange">{t.role}</span>
-                  </div>
-                  <div className="flex text-amber-400">
-                    {[...Array(t.rating || 5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400" />
-                    ))}
-                  </div>
-                </div>
+              <div key={t.id} className="bg-neutral-950/80 border border-white/10 rounded-3xl p-6 space-y-5 relative flex flex-col justify-between hover:border-brand-orange/40 transition-all shadow-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-orange/30 to-purple-500/30 border border-brand-orange/40 flex items-center justify-center font-display font-bold text-white text-sm">
+                        {t.name ? t.name.charAt(0) : 'S'}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
+                          {t.name}
+                          {t.type === 'text' && (
+                            <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded uppercase">
+                              GMB Verified
+                            </span>
+                          )}
+                        </h4>
+                        <span className="text-xs font-mono text-white/50">{t.role || 'Student'}</span>
+                      </div>
+                    </div>
 
-                <p className="text-white/80 text-sm italic font-sans">"{t.review_text}"</p>
+                    <div className="flex text-amber-400 shrink-0">
+                      {[...Array(t.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-white/80 text-xs leading-relaxed italic">
+                    "{t.review_text}"
+                  </p>
+                </div>
 
                 {t.type === 'video' && t.media_url && (
                   <div className="pt-2">
                     <button
                       onClick={() => setActiveVideoModal(t.media_url)}
-                      className="w-full bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 py-3 rounded-xl font-mono text-xs uppercase flex items-center justify-center gap-2 transition-all"
+                      className="w-full bg-gradient-to-r from-purple-600/20 to-brand-orange/20 hover:from-purple-600/40 hover:to-brand-orange/40 border border-purple-500/40 text-purple-200 py-3 rounded-xl font-mono text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all group"
                     >
-                      <Play className="w-4 h-4 fill-purple-300" /> Watch Video Testimonial
+                      <div className="w-6 h-6 rounded-full bg-brand-orange text-black flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Play className="w-3.5 h-3.5 fill-black ml-0.5" />
+                      </div>
+                      Watch Video Testimonial
                     </button>
                   </div>
                 )}
