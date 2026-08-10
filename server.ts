@@ -192,7 +192,7 @@ async function initDB() {
         trainer_bio TEXT,
         trainer_image TEXT,
         trainer_reel_url TEXT,
-        trainer_experience VARCHAR(255),
+        trainer_experience VARCHAR(255)
       );
     `);
 
@@ -910,7 +910,6 @@ const defaultMasterclassCourse = {
   trainer_experience: '5+ Years Experience | 10,000+ Students Trained'
 };
 
-const masterclassDataFile = path.join(process.cwd(), "masterclass_data.json");
 let memoryMasterclassCourse: any = { ...defaultMasterclassCourse };
 
 function loadMasterclassDataFromDisk() {
