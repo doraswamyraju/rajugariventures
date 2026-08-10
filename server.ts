@@ -877,8 +877,8 @@ const defaultMasterclassCourse = {
   trainer_name: 'Doraswamy Raju',
   trainer_role: 'Founder, Rajugari Ventures | AI & Automation Specialist',
   trainer_bio: 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.',
-  trainer_image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
-  trainer_reel_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+  trainer_image: '',
+  trainer_reel_url: '',
   trainer_experience: '5+ Years Experience | 10,000+ Students Trained'
 };
 

@@ -366,7 +366,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) handleFileUpload(file, (url) => setCourse({ ...course, trainer_image: url }));
+                        if (file) handleFileUpload(file, (url) => setCourse(prev => ({ ...prev, trainer_image: url })));
                       }}
                     />
                   </label>
@@ -374,7 +374,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                 <input
                   type="text"
                   value={course.trainer_image || ''}
-                  onChange={(e) => setCourse({ ...course, trainer_image: e.target.value })}
+                  onChange={(e) => setCourse(prev => ({ ...prev, trainer_image: e.target.value }))}
                   placeholder="https://... or click Upload Photo"
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
                 />
@@ -391,7 +391,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) handleFileUpload(file, (url) => setCourse({ ...course, trainer_reel_url: url }));
+                        if (file) handleFileUpload(file, (url) => setCourse(prev => ({ ...prev, trainer_reel_url: url })));
                       }}
                     />
                   </label>
@@ -399,7 +399,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                 <input
                   type="text"
                   value={course.trainer_reel_url || ''}
-                  onChange={(e) => setCourse({ ...course, trainer_reel_url: e.target.value })}
+                  onChange={(e) => setCourse(prev => ({ ...prev, trainer_reel_url: e.target.value }))}
                   placeholder="e.g. https://... (or click Upload Video Reel)"
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
                 />

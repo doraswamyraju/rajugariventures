@@ -273,11 +273,21 @@ export default function AIMasterclass() {
             {/* Trainer Image / Video Reel Card */}
             <div className="lg:col-span-5 relative group">
               <div className="relative rounded-2xl overflow-hidden border-2 border-brand-orange/40 shadow-2xl aspect-[4/5] bg-black">
-                <img 
-                  src={courseData.trainer_image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80"} 
-                  alt={courseData.trainer_name || "Doraswamy Raju"} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                {courseData.trainer_image ? (
+                  <img 
+                    src={courseData.trainer_image} 
+                    alt={courseData.trainer_name || "Doraswamy Raju"} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-neutral-900 to-black p-6 text-center space-y-3">
+                    <div className="w-20 h-20 rounded-full bg-brand-orange/20 text-brand-orange border border-brand-orange/30 flex items-center justify-center font-display font-extrabold text-2xl">
+                      DR
+                    </div>
+                    <h4 className="font-display font-bold text-white text-lg">{courseData.trainer_name || "Doraswamy Raju"}</h4>
+                    <span className="text-xs font-mono text-brand-orange">{courseData.trainer_role || "Lead Instructor"}</span>
+                  </div>
+                )}
                 
                 {/* Overlay Reel Trigger */}
                 {courseData.trainer_reel_url && (
