@@ -22,6 +22,7 @@ export default function AIMasterclass() {
   const [showcase, setShowcase] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'work' | 'certificate'>('work');
   const [activeVideoModal, setActiveVideoModal] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -273,10 +274,11 @@ export default function AIMasterclass() {
             {/* Trainer Image / Video Reel Card */}
             <div className="lg:col-span-5 relative group">
               <div className="relative rounded-2xl overflow-hidden border-2 border-brand-orange/40 shadow-2xl aspect-[4/5] bg-black">
-                {courseData.trainer_image ? (
+                {courseData.trainer_image && !imageError ? (
                   <img 
                     src={courseData.trainer_image} 
                     alt={courseData.trainer_name || "Doraswamy Raju"} 
+                    onError={() => setImageError(true)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (

@@ -24,9 +24,14 @@ if (!ai) {
 
 // Configure Multer Storage for Image and Video Uploads
 const uploadsDir = path.join(process.cwd(), "public", "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+const distUploadsDir = path.join(process.cwd(), "dist", "uploads");
+const rootUploadsDir = path.join(process.cwd(), "uploads");
+
+[uploadsDir, distUploadsDir, rootUploadsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -46,7 +51,11 @@ const upload = multer({
 
 app.use(express.json());
 app.use(cors());
+
+// Serve static uploads from all possible locations
 app.use("/uploads", express.static(uploadsDir));
+app.use("/uploads", express.static(distUploadsDir));
+app.use("/uploads", express.static(rootUploadsDir));
 
 let pool: mysql.Pool | null = null;
 let sqliteDb: any = null;
@@ -1032,11 +1041,25 @@ app.post("/api/upload", authenticateToken, upload.single("file"), (req: any, res
     if (!req.file) {
       return res.status(400).json({ error: "No file was uploaded." });
     }
-    const fileUrl = `/uploads/${req.file.filename}`;
+
+    const filename = req.file.filename;
+    const srcPath = req.file.path;
+
+    // Synchronize uploaded file across dist/uploads and root uploads
+    [distUploadsDir, rootUploadsDir].forEach(targetDir => {
+      try {
+        if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+        fs.copyFileSync(srcPath, path.join(targetDir, filename));
+      } catch (copyErr) {
+        console.warn("Could not sync uploaded file to:", targetDir, copyErr);
+      }
+    });
+
+    const fileUrl = `/uploads/${filename}`;
     res.json({
       success: true,
       url: fileUrl,
-      filename: req.file.filename,
+      filename: filename,
       originalName: req.file.originalname,
       size: req.file.size
     });
