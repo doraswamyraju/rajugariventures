@@ -1,27 +1,45 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs";
 import { createRequire } from "module";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { GoogleGenAI } from "@google/genai";
 import mysql from "mysql2/promise";
+import multer from "multer";
 
 const require = createRequire(import.meta.url);
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "rajugari-secret-key-change-in-prod";
 
-// Initialize Gemini AI
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const ai = GEMINI_API_KEY && GEMINI_API_KEY !== "MY_GEMINI_API_KEY" ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
-if (!ai) {
-  console.warn("GEMINI_API_KEY not found or using default. AI features will be disabled.");
+// Configure Multer Storage for Image and Video Uploads
+const uploadsDir = path.join(process.cwd(), "public", "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const name = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9]/g, "_");
+    cb(null, `${name}_${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB max for video/image uploads
+});
 
 app.use(express.json());
 app.use(cors());
+app.use("/uploads", express.static(uploadsDir));
 
 let pool: mysql.Pool | null = null;
 let sqliteDb: any = null;
@@ -820,11 +838,22 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
           res.json({ success: true, message: "Course & Trainer settings updated successfully!" });
         }
       );
-    } else {
-      res.json({ success: true, message: "Course updated in memory" });
+// File Upload Endpoint (Images & Videos)
+app.post("/api/upload", authenticateToken, upload.single("file"), (req: any, res: any) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file was uploaded." });
     }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      success: true,
+      url: fileUrl,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Upload failed: " + err.message });
   }
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, Clock, DollarSign, Video, Image as ImageIcon, Users, Save, Plus, Trash2, Download, CheckCircle, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Video, Image as ImageIcon, Users, Save, Plus, Trash2, Download, CheckCircle, ExternalLink, Upload, FileText } from 'lucide-react';
 
 interface CourseManagerTabProps {
   token: string;
@@ -81,6 +81,22 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File, onSuccess: (url: string) => void) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      setSaveMsg({ text: 'Uploading file to server...' });
+      const res = await axios.post('/api/upload', formData, getAuthHeaders());
+      if (res.data.url) {
+        onSuccess(res.data.url);
+        setSaveMsg({ text: `File uploaded successfully! (${res.data.url})` });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setSaveMsg({ text: err.response?.data?.error || 'File upload failed', isError: true });
     }
   };
 
@@ -318,23 +334,51 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Profile Photo URL</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Profile Photo</label>
+                  <label className="cursor-pointer text-[10px] font-mono uppercase bg-brand-orange/20 text-brand-orange border border-brand-orange/30 px-2 py-1 rounded hover:bg-brand-orange/30 flex items-center gap-1">
+                    <Upload className="w-3 h-3" /> Upload Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file, (url) => setCourse({ ...course, trainer_image: url }));
+                      }}
+                    />
+                  </label>
+                </div>
                 <input
                   type="text"
                   value={course.trainer_image || ''}
                   onChange={(e) => setCourse({ ...course, trainer_image: e.target.value })}
-                  placeholder="https://... or photo URL"
+                  placeholder="https://... or click Upload Photo"
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Video Reel Embed URL</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Video Reel</label>
+                  <label className="cursor-pointer text-[10px] font-mono uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-1 rounded hover:bg-purple-500/30 flex items-center gap-1">
+                    <Upload className="w-3 h-3" /> Upload Video Reel
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file, (url) => setCourse({ ...course, trainer_reel_url: url }));
+                      }}
+                    />
+                  </label>
+                </div>
                 <input
                   type="text"
                   value={course.trainer_reel_url || ''}
                   onChange={(e) => setCourse({ ...course, trainer_reel_url: e.target.value })}
-                  placeholder="e.g. https://www.youtube.com/embed/..."
+                  placeholder="e.g. https://... (or click Upload Video Reel)"
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
                 />
               </div>
@@ -409,14 +453,28 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
             </div>
 
             {newTestimonial.type === 'video' ? (
-              <input
-                type="text"
-                placeholder="Video Embed URL (e.g. https://www.youtube.com/embed/... or MP4 link)"
-                value={newTestimonial.media_url}
-                onChange={(e) => setNewTestimonial({ ...newTestimonial, media_url: e.target.value })}
-                required
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-orange"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Video URL (e.g. YouTube embed or uploaded MP4/WebM URL)"
+                  value={newTestimonial.media_url}
+                  onChange={(e) => setNewTestimonial({ ...newTestimonial, media_url: e.target.value })}
+                  required
+                  className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-orange"
+                />
+                <label className="cursor-pointer bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 px-3 py-2 rounded-xl text-xs font-mono uppercase flex items-center gap-1.5 shrink-0">
+                  <Upload className="w-3.5 h-3.5" /> Upload Video
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, (url) => setNewTestimonial({ ...newTestimonial, media_url: url }));
+                    }}
+                  />
+                </label>
+              </div>
             ) : null}
 
             <textarea
@@ -491,14 +549,28 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                 <option value="certificate" className="bg-neutral-900 text-white">Certificate Handover Photo</option>
               </select>
             </div>
-            <input
-              type="text"
-              placeholder="Image URL (e.g. /assets/student-work.jpg or Unsplash link)"
-              value={newShowcase.image_url}
-              onChange={(e) => setNewShowcase({ ...newShowcase, image_url: e.target.value })}
-              required
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-orange"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Image URL (e.g. /uploads/... or click Upload Image)"
+                value={newShowcase.image_url}
+                onChange={(e) => setNewShowcase({ ...newShowcase, image_url: e.target.value })}
+                required
+                className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-orange"
+              />
+              <label className="cursor-pointer bg-brand-orange/20 text-brand-orange border border-brand-orange/30 hover:bg-brand-orange/30 px-3 py-2 rounded-xl text-xs font-mono uppercase flex items-center gap-1.5 shrink-0">
+                <Upload className="w-3.5 h-3.5" /> Upload Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, (url) => setNewShowcase({ ...newShowcase, image_url: url }));
+                  }}
+                />
+              </label>
+            </div>
             <button type="submit" className="bg-brand-orange text-black font-bold px-5 py-2.5 rounded-xl uppercase font-mono text-xs">
               Add Showcase Item
             </button>
