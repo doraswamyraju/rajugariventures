@@ -22,12 +22,16 @@ if (!ai) {
   console.warn("GEMINI_API_KEY not found or using default. AI features will be disabled.");
 }
 
-// Configure Multer Storage for Image and Video Uploads
+// Configure Multer Storage for Image and Video Uploads (Persistent Storage outside git tree)
+const persistentDir = path.join(process.cwd(), "persistent_storage");
+const persistentUploadsDir = path.join(persistentDir, "uploads");
+const masterclassDataFile = path.join(persistentDir, "masterclass_data.json");
+
 const uploadsDir = path.join(process.cwd(), "public", "uploads");
 const distUploadsDir = path.join(process.cwd(), "dist", "uploads");
 const rootUploadsDir = path.join(process.cwd(), "uploads");
 
-[uploadsDir, distUploadsDir, rootUploadsDir].forEach(dir => {
+[persistentDir, persistentUploadsDir, uploadsDir, distUploadsDir, rootUploadsDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -35,7 +39,7 @@ const rootUploadsDir = path.join(process.cwd(), "uploads");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    cb(null, persistentUploadsDir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -52,7 +56,8 @@ const upload = multer({
 app.use(express.json());
 app.use(cors());
 
-// Serve static uploads from all possible locations
+// Serve static uploads from persistent storage and fallback folders
+app.use("/uploads", express.static(persistentUploadsDir));
 app.use("/uploads", express.static(uploadsDir));
 app.use("/uploads", express.static(distUploadsDir));
 app.use("/uploads", express.static(rootUploadsDir));
@@ -1090,8 +1095,8 @@ app.post("/api/upload", authenticateToken, upload.single("file"), (req: any, res
     const filename = req.file.filename;
     const srcPath = req.file.path;
 
-    // Synchronize uploaded file across dist/uploads and root uploads
-    [distUploadsDir, rootUploadsDir].forEach(targetDir => {
+    // Synchronize uploaded file from persistentUploadsDir across public/uploads, dist/uploads, and root uploads
+    [uploadsDir, distUploadsDir, rootUploadsDir].forEach(targetDir => {
       try {
         if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
         fs.copyFileSync(srcPath, path.join(targetDir, filename));

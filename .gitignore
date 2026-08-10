@@ -11,3 +11,4 @@ dist/uploads/
 *.sqlite
 database.sqlite
 masterclass_data.json
+persistent_storage/
