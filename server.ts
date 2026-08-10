@@ -150,12 +150,89 @@ async function initDB() {
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS certificates (id INTEGER PRIMARY KEY AUTOINCREMENT, cert_id TEXT UNIQUE, name TEXT, course TEXT, email TEXT, status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, phone TEXT, service TEXT, message TEXT, status TEXT DEFAULT 'new', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 
+        sqliteDb.run(`CREATE TABLE IF NOT EXISTS masterclass_course (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT,
+          subtitle TEXT,
+          actual_price INTEGER,
+          offer_price INTEGER,
+          start_date TEXT,
+          timings TEXT,
+          zoom_link TEXT,
+          whatsapp_link TEXT,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        sqliteDb.run(`CREATE TABLE IF NOT EXISTS masterclass_testimonials (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          role TEXT,
+          rating INTEGER,
+          type TEXT,
+          media_url TEXT,
+          review_text TEXT,
+          avatar TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        sqliteDb.run(`CREATE TABLE IF NOT EXISTS masterclass_showcase (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT,
+          category TEXT,
+          image_url TEXT,
+          student_name TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        sqliteDb.run(`CREATE TABLE IF NOT EXISTS masterclass_registrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          email TEXT,
+          phone TEXT,
+          whatsapp TEXT,
+          amount INTEGER,
+          payment_id TEXT,
+          order_id TEXT,
+          status TEXT DEFAULT 'success',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
         const adminUser = "rajugariventures@gmail.com";
         const adminPass = "BOHPM6139n@";
         const hashedPassword = bcrypt.hashSync(adminPass, 10);
         sqliteDb.run(`INSERT OR REPLACE INTO users (id, username, password) VALUES (1, ?, ?)`, [adminUser, hashedPassword]);
+
+        // Seed default course if empty
+        sqliteDb.get("SELECT COUNT(*) as count FROM masterclass_course", (err: any, row: any) => {
+          if (row && row.count === 0) {
+            sqliteDb.run(`INSERT INTO masterclass_course (id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link)
+              VALUES (1, 'AI PRODUCTIVITY MASTERCLASS', 'From Casual AI User to AI Power User in 5 Days', 1499, 499, '17th August 2026', '6:00 PM to 7:00 PM Daily', 'https://zoom.us/j/sample-masterclass', 'https://chat.whatsapp.com/sample-masterclass')`);
+          }
+        });
+
+        // Seed sample testimonials if empty
+        sqliteDb.get("SELECT COUNT(*) as count FROM masterclass_testimonials", (err: any, row: any) => {
+          if (row && row.count === 0) {
+            sqliteDb.run(`INSERT INTO masterclass_testimonials (name, role, rating, type, media_url, review_text) VALUES 
+              ('K. Sai Kumar', 'Business Owner', 5, 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'This 5-day bootcamp completely transformed how I handle daily office reports and social media marketing!'),
+              ('M. Rajesh', 'Freelance Designer', 5, 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'Learning prompt engineering saved me 15+ hours every week. High quality practical sessions!'),
+              ('P. Anusha', 'Software Job Seeker', 5, 'text', '', 'The career day gave me resume building prompts that got me 3 interview calls within a week! Highly recommended.'),
+              ('V. Naresh', 'Marketing Executive', 5, 'text', '', 'Best ₹499 invested. Automated our entire email workflow and social media scripts.')`);
+          }
+        });
+
+        // Seed sample showcase if empty
+        sqliteDb.get("SELECT COUNT(*) as count FROM masterclass_showcase", (err: any, row: any) => {
+          if (row && row.count === 0) {
+            sqliteDb.run(`INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES
+              ('AI Generated Product Banner', 'work', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80', 'M. Rajesh'),
+              ('Certificate Handover Batch #1', 'certificate', 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80', 'Batch #1 Graduates'),
+              ('Social Media Ad Copy & Graphic', 'work', 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80', 'K. Sai Kumar'),
+              ('Masterclass Completion Ceremony', 'certificate', 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80', 'Tirupati Center')`);
+          }
+        });
       });
-      console.log("SQLite File Database initialized successfully with admin user: rajugariventures@gmail.com");
+      console.log("SQLite File Database initialized successfully with admin user and Masterclass tables.");
     } catch (sqliteErr) {
       console.error("SQLite initialization failed:", sqliteErr);
     }
@@ -658,15 +735,199 @@ app.post("/api/certificates/approve/:id", authenticateToken, async (req, res) =>
   }
 });
 
-// 4. Reject Certificate Request (Admin Auth API)
-app.post("/api/certificates/reject/:id", authenticateToken, async (req, res) => {
+// --- MASTERCLASS API ENDPOINTS ---
+
+// Public endpoint to get full landing page content
+app.get("/api/masterclass/public", async (req, res) => {
   try {
-    if (pool) {
-      await pool.query("UPDATE certificates SET status = 'rejected' WHERE id = ?", [req.params.id]);
-    } else if (sqliteDb) {
-      sqliteDb.run("UPDATE certificates SET status = 'rejected' WHERE id = ?", [req.params.id]);
+    if (sqliteDb) {
+      sqliteDb.get("SELECT * FROM masterclass_course WHERE id = 1", (err: any, course: any) => {
+        sqliteDb.all("SELECT * FROM masterclass_testimonials ORDER BY id DESC", (err2: any, testimonials: any) => {
+          sqliteDb.all("SELECT * FROM masterclass_showcase ORDER BY id DESC", (err3: any, showcase: any) => {
+            res.json({
+              course: course || {
+                title: "AI PRODUCTIVITY MASTERCLASS",
+                subtitle: "From Casual AI User to AI Power User in 5 Days",
+                actual_price: 1499,
+                offer_price: 499,
+                start_date: "17th August 2026",
+                timings: "6:00 PM to 7:00 PM Daily",
+                zoom_link: "https://zoom.us/j/sample-masterclass",
+                whatsapp_link: "https://chat.whatsapp.com/sample-masterclass"
+              },
+              testimonials: testimonials || [],
+              showcase: showcase || []
+            });
+          });
+        });
+      });
+    } else {
+      res.json({
+        course: {
+          title: "AI PRODUCTIVITY MASTERCLASS",
+          subtitle: "From Casual AI User to AI Power User in 5 Days",
+          actual_price: 1499,
+          offer_price: 499,
+          start_date: "17th August 2026",
+          timings: "6:00 PM to 7:00 PM Daily",
+          zoom_link: "https://zoom.us/j/sample-masterclass",
+          whatsapp_link: "https://chat.whatsapp.com/sample-masterclass"
+        },
+        testimonials: [],
+        showcase: []
+      });
     }
-    res.json({ success: true, message: "Certificate request rejected." });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin endpoint to update course settings
+app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => {
+  const { title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link } = req.body;
+  try {
+    if (sqliteDb) {
+      sqliteDb.run(
+        `UPDATE masterclass_course SET title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1`,
+        [title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link],
+        function (err: any) {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json({ success: true, message: "Course settings updated successfully!" });
+        }
+      );
+    } else {
+      res.json({ success: true, message: "Course updated in memory" });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoints for Testimonials
+app.post("/api/masterclass/admin/testimonials", authenticateToken, async (req, res) => {
+  const { name, role, rating, type, media_url, review_text, avatar } = req.body;
+  try {
+    if (sqliteDb) {
+      sqliteDb.run(
+        `INSERT INTO masterclass_testimonials (name, role, rating, type, media_url, review_text, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, role, rating || 5, type || 'text', media_url || '', review_text || '', avatar || ''],
+        function (err: any) {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json({ success: true, id: this.lastID });
+        }
+      );
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/masterclass/admin/testimonials/:id", authenticateToken, async (req, res) => {
+  try {
+    if (sqliteDb) {
+      sqliteDb.run("DELETE FROM masterclass_testimonials WHERE id = ?", [req.params.id], (err: any) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+      });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoints for Showcase Media
+app.post("/api/masterclass/admin/showcase", authenticateToken, async (req, res) => {
+  const { title, category, image_url, student_name } = req.body;
+  try {
+    if (sqliteDb) {
+      sqliteDb.run(
+        `INSERT INTO masterclass_showcase (title, category, image_url, student_name) VALUES (?, ?, ?, ?)`,
+        [title, category || 'work', image_url, student_name || 'Student'],
+        function (err: any) {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json({ success: true, id: this.lastID });
+        }
+      );
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/masterclass/admin/showcase/:id", authenticateToken, async (req, res) => {
+  try {
+    if (sqliteDb) {
+      sqliteDb.run("DELETE FROM masterclass_showcase WHERE id = ?", [req.params.id], (err: any) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+      });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Payment & Registration endpoints
+app.post("/api/masterclass/create-order", async (req, res) => {
+  const { amount, name, email, phone } = req.body;
+  try {
+    // Generate order ID
+    const orderId = "order_mc_" + Date.now();
+    res.json({
+      orderId,
+      amount: amount || 499,
+      currency: "INR",
+      keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_placeholder"
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/masterclass/verify-payment", async (req, res) => {
+  const { name, email, phone, whatsapp, amount, payment_id, order_id } = req.body;
+  try {
+    if (sqliteDb) {
+      sqliteDb.run(
+        `INSERT INTO masterclass_registrations (name, email, phone, whatsapp, amount, payment_id, order_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'success')`,
+        [name, email, phone, whatsapp || phone, amount || 499, payment_id || ('pay_' + Date.now()), order_id || 'direct'],
+        function (err: any) {
+          if (err) console.error("Error inserting registration:", err);
+        }
+      );
+
+      sqliteDb.get("SELECT zoom_link, whatsapp_link FROM masterclass_course WHERE id = 1", (err: any, row: any) => {
+        res.json({
+          success: true,
+          message: "Registration successful!",
+          zoomLink: row?.zoom_link || "https://zoom.us/j/sample-masterclass",
+          whatsappLink: row?.whatsapp_link || "https://chat.whatsapp.com/sample-masterclass"
+        });
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "Registration successful!",
+        zoomLink: "https://zoom.us/j/sample-masterclass",
+        whatsappLink: "https://chat.whatsapp.com/sample-masterclass"
+      });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint to view registrations
+app.get("/api/masterclass/admin/registrations", authenticateToken, async (req, res) => {
+  try {
+    if (sqliteDb) {
+      sqliteDb.all("SELECT * FROM masterclass_registrations ORDER BY id DESC", (err: any, rows: any) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+      });
+    } else {
+      res.json([]);
+    }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

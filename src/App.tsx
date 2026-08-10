@@ -9,6 +9,7 @@ import Portfolio from './pages/Portfolio';
 import Process from './pages/Process';
 import Contact from './pages/Contact';
 import CertificateIssuance from './pages/CertificateIssuance';
+import AIMasterclass from './pages/AIMasterclass';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
 
@@ -31,6 +32,10 @@ export default function App() {
               <Route path="contact" element={<Contact />} />
               <Route path="certificate" element={<CertificateIssuance />} />
             </Route>
+
+            {/* Masterclass Landing Page */}
+            <Route path="/ai-masterclass" element={<AIMasterclass />} />
+            <Route path="/masterclass" element={<AIMasterclass />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<Login />} />
