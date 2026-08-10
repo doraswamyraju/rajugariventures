@@ -905,7 +905,37 @@ const defaultMasterclassCourse = {
   trainer_experience: '5+ Years Experience | 10,000+ Students Trained'
 };
 
+const masterclassDataFile = path.join(process.cwd(), "masterclass_data.json");
 let memoryMasterclassCourse: any = { ...defaultMasterclassCourse };
+
+function loadMasterclassDataFromDisk() {
+  try {
+    if (fs.existsSync(masterclassDataFile)) {
+      const raw = fs.readFileSync(masterclassDataFile, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (parsed.course) memoryMasterclassCourse = { ...defaultMasterclassCourse, ...parsed.course };
+      if (parsed.testimonials) memoryTestimonialsData = parsed.testimonials;
+      if (parsed.showcase) memoryShowcaseData = parsed.showcase;
+      console.log("Successfully loaded Masterclass settings from disk file.");
+    }
+  } catch (err) {
+    console.error("Disk load error:", err);
+  }
+}
+
+function saveMasterclassDataToDisk() {
+  try {
+    fs.writeFileSync(masterclassDataFile, JSON.stringify({
+      course: memoryMasterclassCourse,
+      testimonials: memoryTestimonialsData,
+      showcase: memoryShowcaseData
+    }, null, 2));
+  } catch (err) {
+    console.error("Disk save error:", err);
+  }
+}
+
+loadMasterclassDataFromDisk();
 
 // --- MASTERCLASS API ENDPOINTS ---
 
@@ -976,12 +1006,13 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
     trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience 
   } = req.body;
 
-  // Always update memory store immediately
+  // Always update memory store & persist to disk immediately
   memoryMasterclassCourse = {
     ...memoryMasterclassCourse,
     title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
     trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
   };
+  saveMasterclassDataToDisk();
 
   try {
     if (pool) {
@@ -1092,6 +1123,7 @@ app.post("/api/masterclass/admin/testimonials", authenticateToken, async (req, r
   };
 
   memoryTestimonialsData.unshift(newTestimonial);
+  saveMasterclassDataToDisk();
 
   try {
     if (pool) {
@@ -1129,6 +1161,7 @@ app.post("/api/masterclass/admin/testimonials", authenticateToken, async (req, r
 app.delete("/api/masterclass/admin/testimonials/:id", authenticateToken, async (req, res) => {
   const testId = Number(req.params.id);
   memoryTestimonialsData = memoryTestimonialsData.filter(t => Number(t.id) !== testId);
+  saveMasterclassDataToDisk();
   try {
     if (pool) {
       try {

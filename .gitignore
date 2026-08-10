@@ -10,3 +10,4 @@ public/uploads/
 dist/uploads/
 *.sqlite
 database.sqlite
+masterclass_data.json
