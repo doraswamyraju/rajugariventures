@@ -179,8 +179,9 @@ async function initDB() {
         trainer_image TEXT,
         trainer_reel_url TEXT,
         trainer_experience VARCHAR(255),
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
+    `);
+
     // Ensure trainer columns exist in masterclass_course
     const addColumn = async (colName: string, colDef: string) => {
       try {
