@@ -181,7 +181,20 @@ async function initDB() {
         trainer_experience VARCHAR(255),
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
-    `);
+    // Ensure trainer columns exist in masterclass_course
+    const addColumn = async (colName: string, colDef: string) => {
+      try {
+        await pool!.query(`ALTER TABLE masterclass_course ADD COLUMN ${colName} ${colDef}`);
+      } catch (e: any) {
+        // Ignore if column already exists
+      }
+    };
+    await addColumn('trainer_name', 'VARCHAR(255)');
+    await addColumn('trainer_role', 'VARCHAR(255)');
+    await addColumn('trainer_bio', 'TEXT');
+    await addColumn('trainer_image', 'TEXT');
+    await addColumn('trainer_reel_url', 'TEXT');
+    await addColumn('trainer_experience', 'VARCHAR(255)');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS masterclass_testimonials (
@@ -227,7 +240,7 @@ async function initDB() {
     const [courses]: any = await pool.query("SELECT COUNT(*) as count FROM masterclass_course");
     if (courses[0].count === 0) {
       await pool.query(`INSERT INTO masterclass_course (id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link, trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience)
-        VALUES (1, 'AI PRODUCTIVITY MASTERCLASS', 'From Casual AI User to AI Power User in 5 Days', 1499, 499, '17th August 2026', '6:00 PM to 7:00 PM Daily', 'https://zoom.us/j/sample-masterclass', 'https://chat.whatsapp.com/sample-masterclass', 'Doraswamy Raju', 'Founder, Rajugari Ventures | AI & Automation Specialist', 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', '5+ Years Experience | 10,000+ Students Trained')`);
+        VALUES (1, 'AI PRODUCTIVITY MASTERCLASS', 'From Casual AI User to AI Power User in 5 Days', 1499, 499, '17th August 2026', '6:00 PM to 7:00 PM Daily', 'https://zoom.us/j/sample-masterclass', 'https://chat.whatsapp.com/sample-masterclass', 'Doraswamy Raju', 'Founder, Rajugari Ventures | AI & Automation Specialist', 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.', '', '', '5+ Years Experience | 10,000+ Students Trained')`);
     }
 
     // Seed MySQL sample testimonials if empty
@@ -968,8 +981,9 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
           ]
         );
         return res.json({ success: true, message: "Course & Trainer settings saved successfully!" });
-      } catch (mysqlErr) {
+      } catch (mysqlErr: any) {
         console.error("MySQL update course error:", mysqlErr);
+        return res.status(500).json({ error: "Database error: " + mysqlErr.message });
       }
     }
 
