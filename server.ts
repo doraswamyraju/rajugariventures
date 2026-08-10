@@ -943,16 +943,31 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
     if (pool) {
       try {
         await pool.query(
-          `UPDATE masterclass_course SET 
-            title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?,
-            trainer_name = ?, trainer_role = ?, trainer_bio = ?, trainer_image = ?, trainer_reel_url = ?, trainer_experience = ?
-            WHERE id = 1`,
+          `INSERT INTO masterclass_course (
+            id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
+            trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
+          ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            title = VALUES(title),
+            subtitle = VALUES(subtitle),
+            actual_price = VALUES(actual_price),
+            offer_price = VALUES(offer_price),
+            start_date = VALUES(start_date),
+            timings = VALUES(timings),
+            zoom_link = VALUES(zoom_link),
+            whatsapp_link = VALUES(whatsapp_link),
+            trainer_name = VALUES(trainer_name),
+            trainer_role = VALUES(trainer_role),
+            trainer_bio = VALUES(trainer_bio),
+            trainer_image = VALUES(trainer_image),
+            trainer_reel_url = VALUES(trainer_reel_url),
+            trainer_experience = VALUES(trainer_experience)`,
           [
             title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
             trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
           ]
         );
-        return res.json({ success: true, message: "Course & Trainer settings updated successfully!" });
+        return res.json({ success: true, message: "Course & Trainer settings saved successfully!" });
       } catch (mysqlErr) {
         console.error("MySQL update course error:", mysqlErr);
       }
@@ -960,17 +975,17 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
 
     if (sqliteDb) {
       sqliteDb.run(
-        `UPDATE masterclass_course SET 
-          title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?,
-          trainer_name = ?, trainer_role = ?, trainer_bio = ?, trainer_image = ?, trainer_reel_url = ?, trainer_experience = ?,
-          updated_at = CURRENT_TIMESTAMP WHERE id = 1`,
+        `INSERT OR REPLACE INTO masterclass_course (
+          id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
+          trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
           trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
         ],
         function (err: any) {
           if (err) return res.status(500).json({ error: err.message });
-          res.json({ success: true, message: "Course & Trainer settings updated successfully!" });
+          res.json({ success: true, message: "Course & Trainer settings saved successfully!" });
         }
       );
     } else {
