@@ -15,6 +15,13 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "rajugari-secret-key-change-in-prod";
 
+// Initialize Gemini AI
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const ai = GEMINI_API_KEY && GEMINI_API_KEY !== "MY_GEMINI_API_KEY" ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+if (!ai) {
+  console.warn("GEMINI_API_KEY not found or using default. AI features will be disabled.");
+}
+
 // Configure Multer Storage for Image and Video Uploads
 const uploadsDir = path.join(process.cwd(), "public", "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -838,6 +845,14 @@ app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => 
           res.json({ success: true, message: "Course & Trainer settings updated successfully!" });
         }
       );
+    } else {
+      res.json({ success: true, message: "Course updated in memory" });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // File Upload Endpoint (Images & Videos)
 app.post("/api/upload", authenticateToken, upload.single("file"), (req: any, res: any) => {
   try {
