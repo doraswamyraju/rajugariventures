@@ -545,15 +545,30 @@ export default function AIMasterclass() {
                 </div>
 
                 {t.type === 'video' && t.media_url && (
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
+                    <div className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-black aspect-video group shadow-lg">
+                      {t.media_url.includes('/uploads/') || t.media_url.endsWith('.mp4') || t.media_url.endsWith('.webm') || t.media_url.endsWith('.mov') ? (
+                        <video 
+                          src={t.media_url} 
+                          controls 
+                          preload="metadata"
+                          className="w-full h-full object-contain" 
+                        />
+                      ) : (
+                        <iframe 
+                          src={t.media_url} 
+                          title="Video Testimonial"
+                          className="w-full h-full border-0" 
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                          allowFullScreen
+                        />
+                      )}
+                    </div>
                     <button
                       onClick={() => setActiveVideoModal(t.media_url)}
-                      className="w-full bg-gradient-to-r from-purple-600/20 to-brand-orange/20 hover:from-purple-600/40 hover:to-brand-orange/40 border border-purple-500/40 text-purple-200 py-3 rounded-xl font-mono text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all group"
+                      className="w-full bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 py-2 rounded-xl font-mono text-[11px] font-bold uppercase flex items-center justify-center gap-2 transition-all"
                     >
-                      <div className="w-6 h-6 rounded-full bg-brand-orange text-black flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Play className="w-3.5 h-3.5 fill-black ml-0.5" />
-                      </div>
-                      Watch Video Testimonial
+                      <Play className="w-3.5 h-3.5 fill-purple-200" /> Fullscreen Player
                     </button>
                   </div>
                 )}

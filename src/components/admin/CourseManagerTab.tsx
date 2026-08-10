@@ -561,8 +561,14 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                   <span className="text-white/40 text-xs">({t.role})</span>
                 </div>
                 <p className="text-white/80 text-xs italic">"{t.review_text}"</p>
-                {t.media_url && (
-                  <p className="text-brand-orange text-[10px] font-mono truncate">{t.media_url}</p>
+                {t.type === 'video' && t.media_url && (
+                  <div className="pt-2">
+                    {t.media_url.includes('/uploads/') || t.media_url.endsWith('.mp4') || t.media_url.endsWith('.webm') ? (
+                      <video src={t.media_url} controls preload="metadata" className="w-full h-32 object-cover rounded-lg border border-white/10" />
+                    ) : (
+                      <p className="text-brand-orange text-[10px] font-mono truncate">{t.media_url}</p>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
