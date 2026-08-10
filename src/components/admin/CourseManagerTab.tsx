@@ -52,6 +52,11 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
   // Registrations State
   const [registrations, setRegistrations] = useState<any[]>([]);
 
+  // Action Loading States
+  const [savingCourse, setSavingCourse] = useState(false);
+  const [savingTestimonial, setSavingTestimonial] = useState(false);
+  const [savingShowcase, setSavingShowcase] = useState(false);
+
   const getAuthHeaders = () => {
     const currentToken = token || localStorage.getItem('token') || '';
     return {
@@ -96,28 +101,38 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
       }
     } catch (err: any) {
       console.error(err);
-      setSaveMsg({ text: err.response?.data?.error || 'File upload failed', isError: true });
+      setSaveMsg({ text: err.response?.data?.error || 'File upload failed. Please check network/login.', isError: true });
     }
   };
 
   const handleSaveCourse = async () => {
+    setSavingCourse(true);
     setSaveMsg(null);
     try {
       await axios.put('/api/masterclass/admin/course', course, getAuthHeaders());
-      setSaveMsg({ text: 'Course & Trainer settings saved successfully!' });
+      setSaveMsg({ text: '✓ Course & Trainer settings saved successfully!' });
     } catch (err: any) {
-      setSaveMsg({ text: err.response?.data?.error || 'Failed to save settings. Please re-login.', isError: true });
+      console.error('Save course error:', err);
+      setSaveMsg({ text: err.response?.data?.error || 'Failed to save settings. Please re-login to RV Admin.', isError: true });
+    } finally {
+      setSavingCourse(false);
     }
   };
 
   const handleAddTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSavingTestimonial(true);
+    setSaveMsg(null);
     try {
       await axios.post('/api/masterclass/admin/testimonials', newTestimonial, getAuthHeaders());
       setNewTestimonial({ name: '', role: 'Student', rating: 5, type: 'video', media_url: '', review_text: '' });
+      setSaveMsg({ text: '✓ Testimonial added successfully!' });
       fetchMasterclassData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setSaveMsg({ text: err.response?.data?.error || 'Failed to add testimonial. Please re-login.', isError: true });
+    } finally {
+      setSavingTestimonial(false);
     }
   };
 
@@ -125,6 +140,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
     if (!window.confirm('Delete this testimonial?')) return;
     try {
       await axios.delete(`/api/masterclass/admin/testimonials/${id}`, getAuthHeaders());
+      setSaveMsg({ text: '✓ Testimonial deleted.' });
       fetchMasterclassData();
     } catch (err) {
       console.error(err);
@@ -133,12 +149,18 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
 
   const handleAddShowcase = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSavingShowcase(true);
+    setSaveMsg(null);
     try {
       await axios.post('/api/masterclass/admin/showcase', newShowcase, getAuthHeaders());
       setNewShowcase({ title: '', category: 'work', image_url: '', student_name: '' });
+      setSaveMsg({ text: '✓ Showcase item added successfully!' });
       fetchMasterclassData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setSaveMsg({ text: err.response?.data?.error || 'Failed to add showcase item. Please re-login.', isError: true });
+    } finally {
+      setSavingShowcase(false);
     }
   };
 
@@ -407,12 +429,29 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end">
+          <div className="pt-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            {saveMsg ? (
+              <div className={`px-4 py-2.5 rounded-xl font-mono text-xs flex items-center gap-2 ${saveMsg.isError ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                {saveMsg.text}
+              </div>
+            ) : <div />}
             <button
+              type="button"
               onClick={handleSaveCourse}
-              className="bg-brand-orange text-black font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-opacity-90 transition-all uppercase font-mono text-xs tracking-wider"
+              disabled={savingCourse}
+              className="bg-brand-orange text-black font-bold px-8 py-3.5 rounded-xl flex items-center gap-2 hover:bg-brand-orange/90 active:scale-95 transition-all uppercase font-mono text-xs tracking-wider cursor-pointer shadow-lg shadow-brand-orange/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save className="w-4 h-4" /> Save Course Changes
+              {savingCourse ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  Saving Changes...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Save Course Changes
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -485,8 +524,19 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
               className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-orange"
             />
 
-            <button type="submit" className="bg-brand-orange text-black font-bold px-5 py-2.5 rounded-xl uppercase font-mono text-xs">
-              Add Testimonial
+            <button
+              type="submit"
+              disabled={savingTestimonial}
+              className="bg-brand-orange text-black font-bold px-6 py-3 rounded-xl uppercase font-mono text-xs cursor-pointer flex items-center gap-2 hover:bg-brand-orange/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingTestimonial ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  Adding Review...
+                </>
+              ) : (
+                'Add Testimonial'
+              )}
             </button>
           </form>
 
@@ -571,8 +621,19 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                 />
               </label>
             </div>
-            <button type="submit" className="bg-brand-orange text-black font-bold px-5 py-2.5 rounded-xl uppercase font-mono text-xs">
-              Add Showcase Item
+            <button
+              type="submit"
+              disabled={savingShowcase}
+              className="bg-brand-orange text-black font-bold px-6 py-3 rounded-xl uppercase font-mono text-xs cursor-pointer flex items-center gap-2 hover:bg-brand-orange/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingShowcase ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  Adding Showcase...
+                </>
+              ) : (
+                'Add Showcase Item'
+              )}
             </button>
           </form>
 
