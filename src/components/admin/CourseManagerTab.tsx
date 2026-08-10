@@ -20,7 +20,13 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
     start_date: '17th August 2026',
     timings: '6:00 PM to 7:00 PM Daily',
     zoom_link: 'https://zoom.us/j/sample-masterclass',
-    whatsapp_link: 'https://chat.whatsapp.com/sample-masterclass'
+    whatsapp_link: 'https://chat.whatsapp.com/sample-masterclass',
+    trainer_name: 'Doraswamy Raju',
+    trainer_role: 'Founder, Rajugari Ventures | AI & Automation Specialist',
+    trainer_bio: 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.',
+    trainer_image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    trainer_reel_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    trainer_experience: '5+ Years Experience | 10,000+ Students Trained'
   });
 
   // Testimonials State
@@ -46,8 +52,11 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
   // Registrations State
   const [registrations, setRegistrations] = useState<any[]>([]);
 
-  const authHeaders = {
-    headers: { Authorization: `Bearer ${token}` }
+  const getAuthHeaders = () => {
+    const currentToken = token || localStorage.getItem('token') || '';
+    return {
+      headers: { Authorization: `Bearer ${currentToken}` }
+    };
   };
 
   useEffect(() => {
@@ -58,15 +67,18 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
     setLoading(true);
     try {
       const publicRes = await axios.get('/api/masterclass/public');
-      if (publicRes.data.course) setCourse(publicRes.data.course);
+      if (publicRes.data.course) setCourse(prev => ({ ...prev, ...publicRes.data.course }));
       if (publicRes.data.testimonials) setTestimonials(publicRes.data.testimonials);
       if (publicRes.data.showcase) setShowcase(publicRes.data.showcase);
 
-      // Fetch registrations
-      const regRes = await axios.get('/api/masterclass/admin/registrations', authHeaders);
+      // Fetch registrations with dynamic auth header
+      const regRes = await axios.get('/api/masterclass/admin/registrations', getAuthHeaders());
       setRegistrations(regRes.data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch masterclass data:', err);
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        setSaveMsg({ text: 'Session expired or unauthorized. Please re-login to RV Admin.', isError: true });
+      }
     } finally {
       setLoading(false);
     }
@@ -75,17 +87,17 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
   const handleSaveCourse = async () => {
     setSaveMsg(null);
     try {
-      await axios.put('/api/masterclass/admin/course', course, authHeaders);
-      setSaveMsg({ text: 'Course settings saved successfully!' });
+      await axios.put('/api/masterclass/admin/course', course, getAuthHeaders());
+      setSaveMsg({ text: 'Course & Trainer settings saved successfully!' });
     } catch (err: any) {
-      setSaveMsg({ text: err.response?.data?.error || 'Failed to save settings', isError: true });
+      setSaveMsg({ text: err.response?.data?.error || 'Failed to save settings. Please re-login.', isError: true });
     }
   };
 
   const handleAddTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('/api/masterclass/admin/testimonials', newTestimonial, authHeaders);
+      await axios.post('/api/masterclass/admin/testimonials', newTestimonial, getAuthHeaders());
       setNewTestimonial({ name: '', role: 'Student', rating: 5, type: 'video', media_url: '', review_text: '' });
       fetchMasterclassData();
     } catch (err) {
@@ -96,7 +108,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
   const handleDeleteTestimonial = async (id: number) => {
     if (!window.confirm('Delete this testimonial?')) return;
     try {
-      await axios.delete(`/api/masterclass/admin/testimonials/${id}`, authHeaders);
+      await axios.delete(`/api/masterclass/admin/testimonials/${id}`, getAuthHeaders());
       fetchMasterclassData();
     } catch (err) {
       console.error(err);
@@ -106,7 +118,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
   const handleAddShowcase = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('/api/masterclass/admin/showcase', newShowcase, authHeaders);
+      await axios.post('/api/masterclass/admin/showcase', newShowcase, getAuthHeaders());
       setNewShowcase({ title: '', category: 'work', image_url: '', student_name: '' });
       fetchMasterclassData();
     } catch (err) {
@@ -117,7 +129,7 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
   const handleDeleteShowcase = async (id: number) => {
     if (!window.confirm('Delete this showcase item?')) return;
     try {
-      await axios.delete(`/api/masterclass/admin/showcase/${id}`, authHeaders);
+      await axios.delete(`/api/masterclass/admin/showcase/${id}`, getAuthHeaders());
       fetchMasterclassData();
     } catch (err) {
       console.error(err);
@@ -274,6 +286,80 @@ export default function CourseManagerTab({ token }: CourseManagerTabProps) {
                 placeholder="https://chat.whatsapp.com/..."
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
               />
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-6 space-y-4">
+            <h3 className="text-lg font-bold text-brand-orange uppercase flex items-center gap-2">
+              <Users className="w-5 h-5" /> Trainer & Instructor Profile Settings
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Full Name</label>
+                <input
+                  type="text"
+                  value={course.trainer_name || ''}
+                  onChange={(e) => setCourse({ ...course, trainer_name: e.target.value })}
+                  placeholder="e.g. Doraswamy Raju"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Title / Role</label>
+                <input
+                  type="text"
+                  value={course.trainer_role || ''}
+                  onChange={(e) => setCourse({ ...course, trainer_role: e.target.value })}
+                  placeholder="e.g. Founder, Rajugari Ventures | AI Specialist"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Profile Photo URL</label>
+                <input
+                  type="text"
+                  value={course.trainer_image || ''}
+                  onChange={(e) => setCourse({ ...course, trainer_image: e.target.value })}
+                  placeholder="https://... or photo URL"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Video Reel Embed URL</label>
+                <input
+                  type="text"
+                  value={course.trainer_reel_url || ''}
+                  onChange={(e) => setCourse({ ...course, trainer_reel_url: e.target.value })}
+                  placeholder="e.g. https://www.youtube.com/embed/..."
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Key Stats / Experience Summary</label>
+                <input
+                  type="text"
+                  value={course.trainer_experience || ''}
+                  onChange={(e) => setCourse({ ...course, trainer_experience: e.target.value })}
+                  placeholder="e.g. 5+ Years Experience | 10,000+ Students Trained"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/60">Trainer Bio & Philosophy</label>
+                <textarea
+                  value={course.trainer_bio || ''}
+                  onChange={(e) => setCourse({ ...course, trainer_bio: e.target.value })}
+                  rows={3}
+                  placeholder="Short bio explaining background and training style..."
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand-orange focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 

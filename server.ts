@@ -160,6 +160,12 @@ async function initDB() {
           timings TEXT,
           zoom_link TEXT,
           whatsapp_link TEXT,
+          trainer_name TEXT,
+          trainer_role TEXT,
+          trainer_bio TEXT,
+          trainer_image TEXT,
+          trainer_reel_url TEXT,
+          trainer_experience TEXT,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
@@ -205,8 +211,18 @@ async function initDB() {
         // Seed default course if empty
         sqliteDb.get("SELECT COUNT(*) as count FROM masterclass_course", (err: any, row: any) => {
           if (row && row.count === 0) {
-            sqliteDb.run(`INSERT INTO masterclass_course (id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link)
-              VALUES (1, 'AI PRODUCTIVITY MASTERCLASS', 'From Casual AI User to AI Power User in 5 Days', 1499, 499, '17th August 2026', '6:00 PM to 7:00 PM Daily', 'https://zoom.us/j/sample-masterclass', 'https://chat.whatsapp.com/sample-masterclass')`);
+            sqliteDb.run(`INSERT INTO masterclass_course (id, title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link, trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience)
+              VALUES (1, 'AI PRODUCTIVITY MASTERCLASS', 'From Casual AI User to AI Power User in 5 Days', 1499, 499, '17th August 2026', '6:00 PM to 7:00 PM Daily', 'https://zoom.us/j/sample-masterclass', 'https://chat.whatsapp.com/sample-masterclass', 'Doraswamy Raju', 'Founder, Rajugari Ventures | AI & Automation Specialist', 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', '5+ Years Experience | 10,000+ Students Trained')`);
+          } else {
+            // Update existing row with default trainer details if missing
+            sqliteDb.run(`UPDATE masterclass_course SET 
+              trainer_name = COALESCE(trainer_name, 'Doraswamy Raju'),
+              trainer_role = COALESCE(trainer_role, 'Founder, Rajugari Ventures | AI & Automation Specialist'),
+              trainer_bio = COALESCE(trainer_bio, 'Empowering professionals, business owners, and job seekers with practical, real-world AI productivity workflows. Master ChatGPT, Gemini, and AI tools to save 15+ hours every week.'),
+              trainer_image = COALESCE(trainer_image, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'),
+              trainer_reel_url = COALESCE(trainer_reel_url, 'https://www.youtube.com/embed/dQw4w9WgXcQ'),
+              trainer_experience = COALESCE(trainer_experience, '5+ Years Experience | 10,000+ Students Trained')
+              WHERE id = 1`);
           }
         });
 
@@ -784,15 +800,24 @@ app.get("/api/masterclass/public", async (req, res) => {
 
 // Admin endpoint to update course settings
 app.put("/api/masterclass/admin/course", authenticateToken, async (req, res) => {
-  const { title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link } = req.body;
+  const { 
+    title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
+    trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience 
+  } = req.body;
   try {
     if (sqliteDb) {
       sqliteDb.run(
-        `UPDATE masterclass_course SET title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1`,
-        [title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link],
+        `UPDATE masterclass_course SET 
+          title = ?, subtitle = ?, actual_price = ?, offer_price = ?, start_date = ?, timings = ?, zoom_link = ?, whatsapp_link = ?,
+          trainer_name = ?, trainer_role = ?, trainer_bio = ?, trainer_image = ?, trainer_reel_url = ?, trainer_experience = ?,
+          updated_at = CURRENT_TIMESTAMP WHERE id = 1`,
+        [
+          title, subtitle, actual_price, offer_price, start_date, timings, zoom_link, whatsapp_link,
+          trainer_name, trainer_role, trainer_bio, trainer_image, trainer_reel_url, trainer_experience
+        ],
         function (err: any) {
           if (err) return res.status(500).json({ error: err.message });
-          res.json({ success: true, message: "Course settings updated successfully!" });
+          res.json({ success: true, message: "Course & Trainer settings updated successfully!" });
         }
       );
     } else {
