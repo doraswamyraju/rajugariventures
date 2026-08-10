@@ -15,6 +15,14 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "rajugari-secret-key-change-in-prod";
 
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // Initialize Gemini AI
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ai = GEMINI_API_KEY && GEMINI_API_KEY !== "MY_GEMINI_API_KEY" ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
@@ -280,13 +288,19 @@ async function initDB() {
 
     console.log("MySQL Database initialized successfully.");
   } catch (error: any) {
-    console.warn("Notice: MySQL connection failed. Initializing File Database (SQLite) fallback...");
+    console.warn("Notice: MySQL connection failed. Initializing File Database fallback...", error.message);
     pool = null;
     try {
-      const sqlite3 = require('sqlite3').verbose();
-      sqliteDb = new sqlite3.Database(path.join(process.cwd(), 'rajugari.db'));
-      
-      sqliteDb.serialize(() => {
+      let sqlite3Module: any = null;
+      try {
+        sqlite3Module = require('sqlite3')?.verbose();
+      } catch (modErr) {
+        console.warn("sqlite3 package not installed. Operating with persistent disk storage (masterclass_data.json).");
+      }
+      if (sqlite3Module) {
+        sqliteDb = new sqlite3Module.Database(path.join(process.cwd(), 'rajugari.db'));
+        
+        sqliteDb.serialize(() => {
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)`);
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS certificates (id INTEGER PRIMARY KEY AUTOINCREMENT, cert_id TEXT UNIQUE, name TEXT, course TEXT, email TEXT, status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, phone TEXT, service TEXT, message TEXT, status TEXT DEFAULT 'new', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
@@ -390,6 +404,7 @@ async function initDB() {
         });
       });
       console.log("SQLite File Database initialized successfully with admin user and Masterclass tables.");
+    }
     } catch (sqliteErr) {
       console.error("SQLite initialization failed:", sqliteErr);
     }
