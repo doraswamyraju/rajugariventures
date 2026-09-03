@@ -1729,18 +1729,18 @@ function savePersistentReviewsData(data: any) {
   }
 }
 
-// Public endpoint: Fetch Campaign Info
-app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
-  const rawSlug = req.params.slug.trim().toLowerCase();
-  const cleanSlug = rawSlug.replace(/\.html$/, "").replace(/_review$/, "");
-  const possibleSlugs = [rawSlug, cleanSlug, `${cleanSlug}_review`, `${cleanSlug}_review.html`];
-
-  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown";
+// Public endpoint: Fetch Campaign Info (supports both /:slug and /:slug/info)
+app.get(["/api/reviews/campaign/:slug", "/api/reviews/campaign/:slug/info"], async (req, res) => {
+  const rawSlug = decodeURIComponent(req.params.slug || "").trim().toLowerCase();
+  const cleanSlug = rawSlug.replace(/\.html$/i, "").replace(/_review$/i, "");
+  const slugWithReview = `${cleanSlug}_review`;
+  const slugWithHtml = `${cleanSlug}_review.html`;
+  const possibleSlugs = Array.from(new Set([rawSlug, cleanSlug, slugWithReview, slugWithHtml, `${rawSlug}_review`]));
 
   try {
     if (pool) {
       const [campaigns]: any = await pool.query(
-        "SELECT id, name, slug, google_review_url, default_review, is_active FROM review_campaigns WHERE slug IN (?) AND is_active = 1 LIMIT 1",
+        "SELECT id, name, slug, google_review_url, default_review, logo_url, is_active FROM review_campaigns WHERE LOWER(slug) IN (?) AND is_active = 1 LIMIT 1",
         [possibleSlugs]
       );
       if (campaigns && campaigns.length > 0) {
@@ -1756,6 +1756,8 @@ app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
             name: camp.name,
             slug: camp.slug,
             google_review_url: camp.google_review_url,
+            default_review: camp.default_review,
+            logo_url: camp.logo_url || "",
             total_reviews: counts[0]?.total || 0,
             unused_reviews: counts[0]?.unused || 0
           }
@@ -1766,8 +1768,8 @@ app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
     if (sqliteDb) {
       return new Promise<void>((resolve) => {
         sqliteDb.get(
-          `SELECT id, name, slug, google_review_url, default_review, is_active FROM review_campaigns WHERE (slug = ? OR slug = ? OR slug = ? OR slug = ?) AND is_active = 1 LIMIT 1`,
-          [possibleSlugs[0], possibleSlugs[1], possibleSlugs[2], possibleSlugs[3]],
+          `SELECT id, name, slug, google_review_url, default_review, logo_url, is_active FROM review_campaigns WHERE (LOWER(slug) = ? OR LOWER(slug) = ? OR LOWER(slug) = ? OR LOWER(slug) = ?) AND is_active = 1 LIMIT 1`,
+          [possibleSlugs[0] || '', possibleSlugs[1] || '', possibleSlugs[2] || '', possibleSlugs[3] || ''],
           (err: any, camp: any) => {
             if (camp) {
               sqliteDb.get(

@@ -17,12 +17,12 @@ export default function ClientReviewLanding() {
   const params = useParams();
   const location = useLocation();
 
-  // Extract slug from URL pathname (e.g., /vr_here_bms_review.html, /vr_here_bms_review, /review/vr_here_bms, /swarnaamahal_review.html)
+  // Extract slug from URL (handles /vr_here_bms_review.html, /vr_here_bms_review, /review/vr_here_bms, etc.)
   const getSlugFromLocation = (): string => {
-    if (params.slug) return params.slug.replace(/_review(\.html)?$/, '').replace(/\.html$/, '');
-    const pathname = location.pathname.replace(/^\//, '');
-    const clean = pathname.replace(/_review(\.html)?$/, '').replace(/\.html$/, '').replace(/^review\//, '');
-    return clean || 'swarnaamahal';
+    let raw = params.slug || location.pathname;
+    raw = raw.replace(/^\//, '').replace(/^review\//i, '');
+    raw = raw.replace(/\.html$/i, '');
+    return raw || 'swarnaamahal';
   };
 
   const currentSlug = getSlugFromLocation();
@@ -43,7 +43,7 @@ export default function ClientReviewLanding() {
   const fetchCampaignDetails = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/reviews/campaign/${currentSlug}`);
+      const res = await axios.get(`/api/reviews/campaign/${encodeURIComponent(currentSlug)}`);
       if (res.data?.campaign) {
         setCampaign(res.data.campaign);
         if (res.data.campaign.google_review_url) {
@@ -51,9 +51,23 @@ export default function ClientReviewLanding() {
         }
       }
     } catch (err) {
-      console.warn('Could not load specific campaign details, using fallback', err);
+      console.warn('Could not load specific campaign details, trying fallback endpoint...', err);
+      try {
+        const res2 = await axios.get(`/api/reviews/campaign/${encodeURIComponent(currentSlug)}/info`);
+        if (res2.data?.campaign) {
+          setCampaign(res2.data.campaign);
+          if (res2.data.campaign.google_review_url) {
+            setTargetUrl(res2.data.campaign.google_review_url);
+          }
+          return;
+        }
+      } catch (err2) {
+        console.error('All campaign endpoints failed:', err2);
+      }
+
+      // Fallback display if network/server is completely offline
       setCampaign({
-        name: currentSlug.replace(/_/g, ' ').toUpperCase(),
+        name: currentSlug.replace(/_review$/i, '').replace(/_/g, ' ').toUpperCase(),
         slug: currentSlug,
         google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M',
         default_review: 'Exceptional service and outstanding quality! Highly recommended.'
@@ -101,12 +115,19 @@ export default function ClientReviewLanding() {
     let claimedText = campaign?.default_review || 'Exceptional service and outstanding quality! Highly recommended.';
 
     try {
-      const res = await axios.post(`/api/reviews/campaign/${currentSlug}/claim`);
+      const res = await axios.post(`/api/reviews/campaign/${encodeURIComponent(currentSlug)}/claim`);
       if (res.data?.reviewText) {
         claimedText = res.data.reviewText;
       }
       if (res.data?.googleReviewUrl) {
         setTargetUrl(res.data.googleReviewUrl);
+      }
+      if (res.data?.campaignName) {
+        setCampaign(prev => prev ? {
+          ...prev,
+          name: res.data.campaignName,
+          logo_url: res.data.logoUrl || prev.logo_url
+        } : null);
       }
     } catch (err) {
       console.warn('Failed to claim review from pool, falling back to default', err);
@@ -149,12 +170,12 @@ export default function ClientReviewLanding() {
       {/* Main Container */}
       <div className="w-full max-w-md relative z-10 space-y-4">
         {/* Card */}
-        <div className="bg-[#121824]/90 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
+        <div className="bg-[#121824]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
           {/* Top subtle highlight */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-brand-orange to-yellow-500" />
 
           {/* Google Verified Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide text-white/90 mb-6 shadow-inner">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide text-white/90 mb-5 shadow-inner">
             <svg width="16" height="16" viewBox="0 0 24 24">
               <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
               <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
@@ -164,20 +185,22 @@ export default function ClientReviewLanding() {
             <span>Google Verified Review</span>
           </div>
 
-          {/* Client Logo OR Client Business Name */}
-          <div className="mb-6 flex flex-col items-center justify-center">
+          {/* Client Logo & Business Name */}
+          <div className="mb-5 flex flex-col items-center justify-center">
             {logoUrl ? (
-              <div className="relative group p-2 mb-2">
+              <div className="relative group p-1.5 mb-3.5">
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-brand-orange/20 rounded-2xl blur-lg group-hover:blur-xl transition-all" />
-                <img
-                  src={logoUrl}
-                  alt={`${clientName} logo`}
-                  className="max-h-20 max-w-[220px] object-contain relative z-10 rounded-xl drop-shadow-lg"
-                />
+                <div className="relative z-10 bg-white rounded-2xl p-2.5 shadow-2xl border border-white/40 flex items-center justify-center">
+                  <img
+                    src={logoUrl}
+                    alt={`${clientName} logo`}
+                    className="max-h-16 max-w-[210px] object-contain rounded-lg"
+                  />
+                </div>
               </div>
             ) : null}
 
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold uppercase tracking-tight bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl font-display font-extrabold uppercase tracking-tight text-white">
               {clientName}
             </h1>
           </div>
@@ -255,7 +278,7 @@ export default function ClientReviewLanding() {
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
