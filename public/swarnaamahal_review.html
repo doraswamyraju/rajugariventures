@@ -116,6 +116,7 @@
       font-weight: 900;
       background: linear-gradient(135deg, #FFF0B8 0%, #D4AF37 50%, #F59E0B 100%);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       letter-spacing: 0.05em;
       line-height: 1.2;
@@ -682,10 +683,15 @@
         if (response.ok) {
           const data = await response.json();
           if (data.reviewText) reviewText = data.reviewText;
-          if (data.googleReviewUrl) targetUrl = data.googleReviewUrl;
+          if (data.googleReviewUrl && data.googleReviewUrl.includes("writereview")) {
+            targetUrl = data.googleReviewUrl;
+          } else {
+            targetUrl = DEFAULT_REVIEW_URL;
+          }
         }
       } catch (e) {
         console.warn("Error claiming review from API, using default:", e);
+        targetUrl = DEFAULT_REVIEW_URL;
       } finally {
         btn.classList.remove("loading");
         btnText.textContent = "Share your love";

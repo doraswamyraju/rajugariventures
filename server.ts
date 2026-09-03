@@ -1574,7 +1574,14 @@ function getPersistentReviewsData() {
     return initialData;
   }
   try {
-    return JSON.parse(fs.readFileSync(reviewsJsonPath, "utf8"));
+    const data = JSON.parse(fs.readFileSync(reviewsJsonPath, "utf8"));
+    // Auto-migrate Swarnaamahal to direct Google write-review URL if outdated
+    const swarnaCamp = data.campaigns?.find((c: any) => c.slug === 'swarnaamahal');
+    if (swarnaCamp && swarnaCamp.google_review_url !== "https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M") {
+      swarnaCamp.google_review_url = "https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M";
+      savePersistentReviewsData(data);
+    }
+    return data;
   } catch (e) {
     return { campaigns: [], reviews: [] };
   }
