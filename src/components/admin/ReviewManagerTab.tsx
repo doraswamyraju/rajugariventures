@@ -519,7 +519,7 @@ export default function ReviewManagerTab({ token }: { token: string }) {
                   required
                   value={newCamp.google_review_url}
                   onChange={(e) => setNewCamp({ ...newCamp, google_review_url: e.target.value })}
-                  placeholder="https://maps.app.goo.gl/99SE68munnEL7ehTA"
+                  placeholder="https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M"
                   className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-orange"
                 />
               </div>

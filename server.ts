@@ -319,7 +319,7 @@ async function initDB() {
         [
           "Shri Swarnaamahal Jewellers",
           "swarnaamahal",
-          "https://maps.app.goo.gl/vZA94Tx1dQwNt8TK6",
+          "https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M",
           "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
           1
         ]
@@ -339,7 +339,7 @@ async function initDB() {
         await pool.query("INSERT INTO review_pool (campaign_id, review_text, is_used) VALUES (?, ?, 0)", [campId, rev]);
       }
     } else {
-      await pool.query("UPDATE review_campaigns SET google_review_url = ? WHERE slug = 'swarnaamahal'", ["https://maps.app.goo.gl/vZA94Tx1dQwNt8TK6"]);
+      await pool.query("UPDATE review_campaigns SET google_review_url = ? WHERE slug = 'swarnaamahal'", ["https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M"]);
     }
 
     console.log("MySQL Database initialized successfully.");
@@ -487,7 +487,7 @@ async function initDB() {
               [
                 "Shri Swarnaamahal Jewellers",
                 "swarnaamahal",
-                "https://maps.app.goo.gl/vZA94Tx1dQwNt8TK6",
+                "https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M",
                 "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!"
               ],
               function (this: any, err2: any) {
@@ -510,7 +510,7 @@ async function initDB() {
               }
             );
           } else {
-            sqliteDb.run("UPDATE review_campaigns SET google_review_url = ? WHERE slug = 'swarnaamahal'", ["https://maps.app.goo.gl/vZA94Tx1dQwNt8TK6"]);
+            sqliteDb.run("UPDATE review_campaigns SET google_review_url = ? WHERE slug = 'swarnaamahal'", ["https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M"]);
           }
         });
       });
@@ -1485,7 +1485,7 @@ function getPersistentReviewsData() {
           id: 1,
           name: "Shri Swarnaamahal Jewellers",
           slug: "swarnaamahal",
-          google_review_url: "https://maps.app.goo.gl/vZA94Tx1dQwNt8TK6",
+          google_review_url: "https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M",
           default_review: "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
           is_active: 1,
           created_at: new Date().toISOString()
