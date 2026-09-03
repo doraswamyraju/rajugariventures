@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { GoogleGenAI } from "@google/genai";
 import mysql from "mysql2/promise";
 import multer from "multer";
+import nodemailer from "nodemailer";
 
 const require = createRequire(import.meta.url);
 const app = express();
@@ -1490,6 +1491,113 @@ app.get("/api/masterclass/admin/registrations", authenticateToken, async (req, r
 
 const reviewsJsonPath = path.join(persistentDir, "reviews_data.json");
 
+// Email Transporter for Admin Alerts
+const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || "rajugariventures@gmail.com";
+const SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com";
+const SMTP_PORT = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+const SMTP_USER = process.env.SMTP_USER || "rajugariventures@gmail.com";
+const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || "";
+
+let mailTransporter: nodemailer.Transporter | null = null;
+try {
+  if (SMTP_USER && SMTP_PASS) {
+    mailTransporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+      }
+    });
+  } else {
+    mailTransporter = nodemailer.createTransport({
+      host: "localhost",
+      port: 25,
+      tls: { rejectUnauthorized: false }
+    });
+  }
+} catch (mailErr) {
+  console.warn("Notice: Mail transporter initialization skipped:", mailErr);
+}
+
+// Track sent alert timestamps to prevent duplicate spamming
+const lowAlertHistory = new Map<string, number>();
+
+async function sendLowReviewAlert(campaignName: string, campaignSlug: string, remainingCount: number) {
+  const now = Date.now();
+  const lastSent = lowAlertHistory.get(campaignSlug) || 0;
+  // Send alert if exactly 5, or at most once every 6 hours when <= 5
+  if (now - lastSent < 6 * 60 * 60 * 1000 && remainingCount !== 5) {
+    return;
+  }
+  lowAlertHistory.set(campaignSlug, now);
+
+  const adminDashboardUrl = `${process.env.APP_URL || "https://rajugariventures.com"}/admin/dashboard`;
+  const subject = `⚠️ Low Review Alert: Only ${remainingCount} reviews left for "${campaignName}"!`;
+  
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0A0D14; color: #FFFFFF; padding: 24px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #D4AF37;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h1 style="color: #D4AF37; font-size: 24px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Rajugari Ventures</h1>
+        <p style="color: #94A3B8; font-size: 13px; margin: 4px 0 0 0;">Google Review Campaign Monitoring System</p>
+      </div>
+
+      <div style="background-color: #1A1F2C; border: 1px solid #EF4444; border-radius: 12px; padding: 18px; margin-bottom: 20px; text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 8px;">⚠️</div>
+        <h2 style="color: #F87171; font-size: 20px; margin: 0 0 6px 0;">Review Inventory Running Low</h2>
+        <p style="color: #E2E8F0; font-size: 15px; margin: 0;">
+          The review pool for <strong>${campaignName}</strong> has only <strong style="color: #FBBF24;">${remainingCount}</strong> available review${remainingCount === 1 ? '' : 's'} remaining!
+        </p>
+      </div>
+
+      <div style="background-color: #111622; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <table style="width: 100%; font-size: 14px; color: #CBD5E1; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #94A3B8;">Business Client:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #FFFFFF;">${campaignName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94A3B8;">Remaining in Pool:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #F59E0B;">${remainingCount} available</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #94A3B8;">Campaign Slug:</td>
+            <td style="padding: 8px 0; text-align: right; font-family: monospace; color: #38BDF8;">/${campaignSlug}_review.html</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 20px;">
+        <a href="${adminDashboardUrl}" style="background: linear-gradient(135deg, #FFE27D 0%, #D4AF37 50%, #A67C1E 100%); color: #0A0D14; font-weight: bold; text-decoration: none; padding: 14px 28px; border-radius: 10px; display: inline-block; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">
+          Bulk Upload More Reviews ➔
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid #334155; padding-top: 16px; text-align: center; color: #64748B; font-size: 12px;">
+        This is an automated notification from your Rajugari Ventures Google Review Manager.<br>
+        © ${new Date().getFullYear()} Rajugari Ventures. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  try {
+    if (mailTransporter) {
+      await mailTransporter.sendMail({
+        from: `"RV Review Alerts" <${SMTP_USER || "rajugariventures@gmail.com"}>`,
+        to: ADMIN_ALERT_EMAIL,
+        subject,
+        html
+      });
+      console.log(`[ALERT] Low review email sent to ${ADMIN_ALERT_EMAIL} for "${campaignName}" (${remainingCount} left)`);
+    } else {
+      console.warn(`[ALERT] Low review threshold reached for "${campaignName}" (${remainingCount} left)`);
+    }
+  } catch (err: any) {
+    console.error("[ALERT ERROR] Failed to send low review email alert:", err.message);
+  }
+}
+
 function getPersistentReviewsData() {
   if (!fs.existsSync(reviewsJsonPath)) {
     const initialData = {
@@ -1745,6 +1853,20 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
             [clientIp, rev.id]
           );
 
+          // Check remaining reviews and trigger alert if <= 5
+          try {
+            const [remRows]: any = await pool.query(
+              "SELECT COUNT(*) as remaining FROM review_pool WHERE campaign_id = ? AND is_used = 0",
+              [camp.id]
+            );
+            const remaining = remRows[0]?.remaining || 0;
+            if (remaining <= 5) {
+              sendLowReviewAlert(camp.name, camp.slug, remaining);
+            }
+          } catch (countErr) {
+            console.error("Error checking remaining reviews count:", countErr);
+          }
+
           return res.json({
             success: true,
             reviewId: rev.id,
@@ -1755,6 +1877,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
           });
         } else {
           // Pool exhausted, deliver default fallback review
+          sendLowReviewAlert(camp.name, camp.slug, 0);
           return res.json({
             success: true,
             reviewId: null,
@@ -1785,6 +1908,18 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
                       "UPDATE review_pool SET is_used = 1, used_at = ?, claimed_ip = ? WHERE id = ?",
                       [now, clientIp, rev.id],
                       (err3: any) => {
+                        // Check remaining reviews in SQLite
+                        sqliteDb.get(
+                          "SELECT COUNT(*) as remaining FROM review_pool WHERE campaign_id = ? AND is_used = 0",
+                          [camp.id],
+                          (countErr: any, remRow: any) => {
+                            const remaining = remRow?.remaining || 0;
+                            if (remaining <= 5) {
+                              sendLowReviewAlert(camp.name, camp.slug, remaining);
+                            }
+                          }
+                        );
+
                         res.json({
                           success: true,
                           reviewId: rev.id,
@@ -1797,6 +1932,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
                       }
                     );
                   } else {
+                    sendLowReviewAlert(camp.name, camp.slug, 0);
                     res.json({
                       success: true,
                       reviewId: null,
@@ -1820,6 +1956,12 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
                   nextRev.used_at = new Date().toISOString();
                   nextRev.claimed_ip = clientIp;
                   savePersistentReviewsData(fileData);
+                  
+                  const remaining = fileData.reviews.filter((r: any) => r.campaign_id === foundCamp.id && !r.is_used).length;
+                  if (remaining <= 5) {
+                    sendLowReviewAlert(foundCamp.name, foundCamp.slug, remaining);
+                  }
+
                   res.json({
                     success: true,
                     reviewId: nextRev.id,
@@ -1829,6 +1971,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
                     isDefault: false
                   });
                 } else {
+                  sendLowReviewAlert(foundCamp.name, foundCamp.slug, 0);
                   res.json({
                     success: true,
                     reviewId: null,
