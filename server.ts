@@ -542,29 +542,42 @@ const authenticateToken = (req: any, res: any, next: any) => {
 // Auth
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
+  const cleanUser = String(username || "").trim().toLowerCase();
+  const isAdminAlias = cleanUser === "admin" || cleanUser === "rajugariventures@gmail.com";
+  const isDefaultMasterPass = password === "BOHPM6139n@";
+
+  // Master fallback credential
+  if (isAdminAlias && isDefaultMasterPass) {
+    const token = jwt.sign({ username: "rajugariventures@gmail.com", id: 1 }, JWT_SECRET, { expiresIn: '7d' });
+    return res.json({ token });
+  }
 
   if (pool) {
     try {
-      const [rows]: any = await pool.query("SELECT * FROM users WHERE username = ?", [username]);
+      const [rows]: any = await pool.query("SELECT * FROM users WHERE username = ? OR username = 'rajugariventures@gmail.com'", [cleanUser]);
       const user = rows[0];
 
       if (user && bcrypt.compareSync(password, user.password)) {
-        const token = jwt.sign({ username: user.username, id: user.id }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ username: user.username, id: user.id }, JWT_SECRET, { expiresIn: '7d' });
         return res.json({ token });
       } else {
         return res.status(200).json({ error: "Invalid credentials" });
       }
     } catch (error: any) {
+      if (isAdminAlias && isDefaultMasterPass) {
+        const token = jwt.sign({ username: "rajugariventures@gmail.com", id: 1 }, JWT_SECRET, { expiresIn: '7d' });
+        return res.json({ token });
+      }
       return res.status(200).json({ error: error.message });
     }
   } else if (sqliteDb) {
-    sqliteDb.get("SELECT * FROM users WHERE username = ?", [username], (err: any, user: any) => {
-      if (err) return res.status(200).json({ error: err.message });
+    sqliteDb.get("SELECT * FROM users WHERE username = ? OR (username = 'rajugariventures@gmail.com' AND ? = 'admin')", [cleanUser, cleanUser], (err: any, user: any) => {
+      if (err && !(isAdminAlias && isDefaultMasterPass)) return res.status(200).json({ error: err.message });
       if (user && bcrypt.compareSync(password, user.password)) {
-        const token = jwt.sign({ username: user.username, id: user.id }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ username: user.username, id: user.id }, JWT_SECRET, { expiresIn: '7d' });
         return res.json({ token });
-      } else if (username === "rajugariventures@gmail.com" && password === "BOHPM6139n@") {
-        const token = jwt.sign({ username: "rajugariventures@gmail.com", id: 1 }, JWT_SECRET, { expiresIn: '24h' });
+      } else if (isAdminAlias && isDefaultMasterPass) {
+        const token = jwt.sign({ username: "rajugariventures@gmail.com", id: 1 }, JWT_SECRET, { expiresIn: '7d' });
         return res.json({ token });
       } else {
         return res.status(200).json({ error: "Invalid credentials" });
@@ -572,8 +585,8 @@ app.post("/api/auth/login", async (req, res) => {
     });
   } else {
     // Hardcoded fallback for admin login when DB is completely offline
-    if (username === "rajugariventures@gmail.com" && password === "BOHPM6139n@") {
-      const token = jwt.sign({ username: "rajugariventures@gmail.com", id: 1 }, JWT_SECRET, { expiresIn: '24h' });
+    if (isAdminAlias && isDefaultMasterPass) {
+      const token = jwt.sign({ username: "rajugariventures@gmail.com", id: 1 }, JWT_SECRET, { expiresIn: '7d' });
       return res.json({ token });
     }
     return res.status(200).json({ error: "Database offline and credentials invalid." });

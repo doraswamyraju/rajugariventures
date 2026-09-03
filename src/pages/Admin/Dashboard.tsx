@@ -238,7 +238,7 @@ export default function Dashboard() {
         )}
 
         {/* Other Tabs */}
-        {activeTab !== 'leads' && activeTab !== 'certificates' && (
+        {['services', 'blogs', 'portfolio'].includes(activeTab) && (
           <div className="text-center py-24 text-white/30 font-mono uppercase tracking-widest bg-white/5 rounded-2xl border border-white/10">
             {activeTab} module ready for setup
           </div>

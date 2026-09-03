@@ -94,7 +94,11 @@ export default function ReviewManagerTab({ token }: { token: string }) {
         setSelectedCampId(res.data[0].id);
       }
     } catch (err: any) {
-      showNotification('Failed to fetch campaigns: ' + (err.response?.data?.error || err.message), true);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        showNotification('Admin session expired. Please log out from the bottom-left and log in again.', true);
+      } else {
+        showNotification('Failed to fetch campaigns: ' + (err.response?.data?.error || err.message), true);
+      }
     } finally {
       setLoading(false);
     }
