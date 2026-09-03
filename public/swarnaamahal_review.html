@@ -6,7 +6,7 @@
   <title>Review Shri Swarnaamahal Jewellers | Share Your Love</title>
   <meta name="description" content="Share your valuable 5-star review for Shri Swarnaamahal Jewellers, Tirupati on Google Maps." />
   
-  <!-- Google Fonts: Playfair Display for luxury heading, Plus Jakarta Sans for clean body -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
       --gold-dark: #997A15;
       --gold-gradient: linear-gradient(135deg, #FFE27D 0%, #D4AF37 50%, #A67C1E 100%);
       --bg-dark: #0A0D14;
-      --bg-card: rgba(22, 27, 39, 0.85);
+      --bg-card: rgba(22, 27, 39, 0.88);
       --text-white: #FFFFFF;
       --text-muted: #94A3B8;
       --google-blue: #4285F4;
@@ -39,9 +39,9 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.18) 0%, transparent 65%),
-        radial-gradient(circle at 100% 100%, rgba(66, 133, 244, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 0% 100%, rgba(234, 67, 53, 0.1) 0%, transparent 50%);
+        radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.2) 0%, transparent 65%),
+        radial-gradient(circle at 100% 100%, rgba(66, 133, 244, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(234, 67, 53, 0.12) 0%, transparent 50%);
       background-attachment: fixed;
       color: var(--text-white);
       min-height: 100vh;
@@ -267,20 +267,20 @@
       50% { transform: scale(1.25); }
     }
 
-    /* Modal / Success Overlay */
+    /* Modal / Customizer Overlay */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(5, 7, 12, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(5, 7, 12, 0.9);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.25rem;
+      padding: 1rem;
       z-index: 999;
       opacity: 0;
       visibility: hidden;
@@ -296,100 +296,193 @@
       background: #111622;
       border: 1px solid rgba(212, 175, 55, 0.5);
       border-radius: 24px;
-      padding: 2rem 1.5rem;
+      padding: 1.75rem 1.35rem;
       width: 100%;
-      max-width: 440px;
+      max-width: 460px;
       text-align: center;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 50px rgba(212, 175, 55, 0.2);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 50px rgba(212, 175, 55, 0.25);
       transform: scale(0.9) translateY(20px);
       transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
     }
 
     .modal-overlay.active .modal-card {
       transform: scale(1) translateY(0);
     }
 
-    .modal-icon-badge {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: rgba(52, 168, 83, 0.15);
-      border: 2px solid #34A853;
-      color: #34A853;
+    .modal-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      margin: 0 auto 1rem;
+      justify-content: space-between;
+      margin-bottom: 1rem;
     }
 
     .modal-title {
-      font-size: 1.35rem;
+      font-size: 1.2rem;
       font-weight: 800;
       color: #FFFFFF;
-      margin-bottom: 0.5rem;
-    }
-
-    .modal-desc {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-bottom: 1.25rem;
-    }
-
-    .copied-preview-box {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px dashed rgba(212, 175, 55, 0.4);
-      border-radius: 14px;
-      padding: 1rem;
-      font-size: 0.88rem;
-      color: #E2E8F0;
-      line-height: 1.45;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       text-align: left;
-      margin-bottom: 1.25rem;
-      position: relative;
     }
 
-    .copied-tag {
-      position: absolute;
-      top: -10px;
-      right: 12px;
-      background: #34A853;
+    .close-modal-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #94A3B8;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .close-modal-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
       color: #FFFFFF;
-      font-size: 0.65rem;
+    }
+
+    .modal-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: left;
+      margin-bottom: 0.85rem;
+      line-height: 1.4;
+    }
+
+    /* Editable Review Box */
+    .review-edit-wrapper {
+      position: relative;
+      margin-bottom: 1.25rem;
+      text-align: left;
+    }
+
+    .review-edit-textarea {
+      width: 100%;
+      min-height: 120px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1.5px solid rgba(212, 175, 55, 0.5);
+      border-radius: 16px;
+      padding: 1rem;
+      padding-top: 1.75rem;
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .review-edit-textarea:focus {
+      border-color: #D4AF37;
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.35);
+    }
+
+    .edit-tag-badge {
+      position: absolute;
+      top: -9px;
+      left: 14px;
+      background: #D4AF37;
+      color: #0A0D14;
+      font-size: 0.68rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
     }
 
-    .redirect-countdown-text {
-      font-size: 0.85rem;
-      color: #94A3B8;
-      margin-bottom: 1rem;
-      font-weight: 600;
+    .char-count {
+      text-align: right;
+      font-size: 0.72rem;
+      color: #64748B;
+      margin-top: 0.25rem;
     }
 
-    .btn-manual-redirect {
+    /* Primary Proceed Button in Modal */
+    .btn-proceed-google {
       width: 100%;
-      background: #4285F4;
-      color: #FFFFFF;
-      font-weight: 700;
-      padding: 0.9rem 1.25rem;
-      border-radius: 14px;
+      background: var(--gold-gradient);
+      color: #0A0D14;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 1rem 1.25rem;
+      border-radius: 16px;
       border: none;
       cursor: pointer;
-      font-size: 0.95rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.35);
+      gap: 0.6rem;
+      box-shadow: var(--shadow-gold);
+      transition: all 0.25s ease;
+      margin-bottom: 0.75rem;
     }
 
-    .btn-manual-redirect:hover {
-      background: #3367D6;
+    .btn-proceed-google:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(212, 175, 55, 0.55);
+    }
+
+    .btn-proceed-google:active {
+      transform: scale(0.98);
+    }
+
+    .modal-hint-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .modal-hint-box span {
+      color: #FBBC05;
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #34A853;
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 100px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .copy-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
 
     /* Footer */
@@ -445,11 +538,11 @@
         </div>
         <div class="step-item">
           <div class="step-num">2</div>
-          <div>A genuine review will be <strong>auto-copied</strong></div>
+          <div>Personalize or keep the <strong>auto-generated review</strong></div>
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div>Google Maps opens — select <strong>5 Stars ★★★★★ & Paste!</strong></div>
+          <div>Click to open Google Maps & select <strong>5 Stars ★★★★★ & Paste!</strong></div>
         </div>
       </div>
 
@@ -465,38 +558,60 @@
     </div>
   </div>
 
-  <!-- Success / Redirect Modal -->
+  <!-- Interactive Review Customizer Modal -->
   <div id="modalOverlay" class="modal-overlay">
     <div class="modal-card">
-      <div class="modal-icon-badge">✓</div>
-      <h2 class="modal-title">Review Copied!</h2>
-      <p class="modal-desc">Your unique review has been copied to your clipboard.</p>
-
-      <div class="copied-preview-box">
-        <div class="copied-tag">Copied</div>
-        <div id="modalReviewText">"Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best in Tirupati!"</div>
+      
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>✨</span>
+          <span>Your 5-Star Review</span>
+        </div>
+        <button class="close-modal-btn" onclick="closeModal()">✕</button>
       </div>
 
-      <div class="redirect-countdown-text" id="countdownText">
-        Redirecting to Google Maps in 2 seconds...
+      <p class="modal-subtitle">
+        We’ve drafted a review for you below. Feel free to edit or add your own words!
+      </p>
+
+      <!-- Editable Review Text Box -->
+      <div class="review-edit-wrapper">
+        <div class="edit-tag-badge">
+          <span>✏️</span>
+          <span>Edit or customize text</span>
+        </div>
+        <textarea id="reviewEditTextarea" class="review-edit-textarea" placeholder="Write your review here..."></textarea>
+        <div id="charCount" class="char-count">0 characters</div>
       </div>
 
-      <a id="directMapLink" href="https://maps.app.goo.gl/99SE68munnEL7ehTA" target="_blank" class="btn-manual-redirect">
-        <span>Open Google Maps Now</span>
+      <!-- Proceed Button -->
+      <button id="proceedBtn" class="btn-proceed-google" onclick="handleProceedToGoogle()">
+        <span>Copy & Go to Google Review</span>
         <span>➔</span>
-      </a>
+      </button>
+
+      <div class="modal-hint-box">
+        💡 In Google Maps: Tap <span>5 Stars ⭐⭐⭐⭐⭐</span> and <span>Paste</span>!
+      </div>
+
     </div>
   </div>
 
+  <!-- Toast -->
+  <div id="copyToast" class="copy-toast">
+    ✓ Review copied! Opening Google Maps...
+  </div>
+
   <script>
-    const DEFAULT_REVIEW_URL = "https://maps.app.goo.gl/99SE68munnEL7ehTA";
+    // Updated direct Google Review link with Place Profile
+    const DEFAULT_REVIEW_URL = "https://maps.app.goo.gl/vZA94Tx1dQwNt8TK6";
     const DEFAULT_FALLBACK_REVIEW = "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!";
     const CAMPAIGN_SLUG = "swarnaamahal";
 
     let targetUrl = DEFAULT_REVIEW_URL;
-    let isProcessing = false;
+    let isFetching = false;
 
-    // Fallback clipboard copying method for older devices
+    // Clipboard fallback
     function copyTextFallback(text) {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -520,7 +635,6 @@
           await navigator.clipboard.writeText(text);
           return true;
         } catch (err) {
-          console.warn("navigator.clipboard failed, using fallback:", err);
           copyTextFallback(text);
           return true;
         }
@@ -530,14 +644,32 @@
       }
     }
 
+    function showToast(msg) {
+      const toast = document.getElementById("copyToast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2500);
+    }
+
+    function closeModal() {
+      document.getElementById("modalOverlay").classList.remove("active");
+    }
+
+    const textarea = document.getElementById("reviewEditTextarea");
+    const charCount = document.getElementById("charCount");
+    textarea.addEventListener("input", () => {
+      charCount.textContent = `${textarea.value.length} characters`;
+    });
+
+    // Step 1: When user clicks "Share your love"
     async function handleShareLove() {
-      if (isProcessing) return;
-      isProcessing = true;
+      if (isFetching) return;
+      isFetching = true;
 
       const btn = document.getElementById("shareLoveBtn");
       const btnText = document.getElementById("btnText");
       btn.classList.add("loading");
-      btnText.textContent = "Copying review...";
+      btnText.textContent = "Loading review...";
 
       let reviewText = DEFAULT_FALLBACK_REVIEW;
 
@@ -554,29 +686,36 @@
         }
       } catch (e) {
         console.warn("Error claiming review from API, using default:", e);
+      } finally {
+        btn.classList.remove("loading");
+        btnText.textContent = "Share your love";
+        isFetching = false;
       }
 
-      // 1. Copy text to clipboard
-      await copyToClipboard(reviewText);
+      // Populate editable textarea with the claimed review
+      textarea.value = reviewText;
+      charCount.textContent = `${reviewText.length} characters`;
 
-      // 2. Update UI Modal
-      document.getElementById("modalReviewText").textContent = `"${reviewText}"`;
-      document.getElementById("directMapLink").href = targetUrl;
+      // Open Modal to let user review or edit
       document.getElementById("modalOverlay").classList.add("active");
+      textarea.focus();
+    }
 
-      // 3. Countdown and automatic redirect
-      let count = 2;
-      const countdownEl = document.getElementById("countdownText");
-      const interval = setInterval(() => {
-        count--;
-        if (count > 0) {
-          countdownEl.textContent = `Redirecting to Google Maps in ${count} second...`;
-        } else {
-          clearInterval(interval);
-          countdownEl.textContent = `Opening Google Maps...`;
-          window.location.href = targetUrl;
-        }
-      }, 1000);
+    // Step 2: When user deliberately clicks "Copy & Go to Google Review"
+    async function handleProceedToGoogle() {
+      const finalText = textarea.value.trim() || DEFAULT_FALLBACK_REVIEW;
+      const proceedBtn = document.getElementById("proceedBtn");
+      
+      proceedBtn.style.opacity = "0.7";
+      proceedBtn.innerHTML = "<span>✓ Copying & Redirecting...</span>";
+
+      // Copy the current (possibly edited) text to clipboard
+      await copyToClipboard(finalText);
+      showToast("✓ Review copied! Opening Google Maps...");
+
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 700);
     }
   </script>
 </body>
