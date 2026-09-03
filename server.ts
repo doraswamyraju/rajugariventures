@@ -295,10 +295,17 @@ async function initDB() {
         slug VARCHAR(100) UNIQUE NOT NULL,
         google_review_url TEXT NOT NULL,
         default_review TEXT,
+        logo_url TEXT,
         is_active TINYINT(1) DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    try {
+      await pool.query("ALTER TABLE review_campaigns ADD COLUMN logo_url TEXT");
+    } catch (e: any) {
+      // Column may already exist
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS review_pool (
@@ -467,9 +474,14 @@ async function initDB() {
           slug TEXT UNIQUE NOT NULL,
           google_review_url TEXT NOT NULL,
           default_review TEXT,
+          logo_url TEXT,
           is_active INTEGER DEFAULT 1,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
+
+        try {
+          sqliteDb.run("ALTER TABLE review_campaigns ADD COLUMN logo_url TEXT", () => {});
+        } catch (sqliteColErr) {}
 
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS review_pool (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1608,6 +1620,7 @@ function getPersistentReviewsData() {
           slug: "swarnaamahal",
           google_review_url: "https://search.google.com/local/writereview?placeid=ChIJnyzeEwVLTToRY3uqd6ehc8M",
           default_review: "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+          logo_url: "",
           is_active: 1,
           created_at: new Date().toISOString()
         }
@@ -1768,6 +1781,8 @@ app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
                       name: camp.name,
                       slug: camp.slug,
                       google_review_url: camp.google_review_url,
+                      default_review: camp.default_review,
+                      logo_url: camp.logo_url || "",
                       total_reviews: countRow?.total || 0,
                       unused_reviews: countRow?.unused || 0
                     }
@@ -1787,6 +1802,8 @@ app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
                     name: found.name,
                     slug: found.slug,
                     google_review_url: found.google_review_url,
+                    default_review: found.default_review,
+                    logo_url: found.logo_url || "",
                     total_reviews: campReviews.length,
                     unused_reviews: campReviews.filter((r: any) => !r.is_used).length
                   }
@@ -1812,6 +1829,8 @@ app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
           name: found.name,
           slug: found.slug,
           google_review_url: found.google_review_url,
+          default_review: found.default_review,
+          logo_url: found.logo_url || "",
           total_reviews: campReviews.length,
           unused_reviews: campReviews.filter((r: any) => !r.is_used).length
         }
@@ -1873,6 +1892,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
             reviewText: rev.review_text,
             googleReviewUrl: camp.google_review_url,
             campaignName: camp.name,
+            logoUrl: camp.logo_url || "",
             isDefault: false
           });
         } else {
@@ -1884,6 +1904,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
             reviewText: camp.default_review || "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
             googleReviewUrl: camp.google_review_url,
             campaignName: camp.name,
+            logoUrl: camp.logo_url || "",
             isDefault: true,
             message: "All pre-uploaded reviews claimed. Delivered default review."
           });
@@ -1926,6 +1947,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
                           reviewText: rev.review_text,
                           googleReviewUrl: camp.google_review_url,
                           campaignName: camp.name,
+                          logoUrl: camp.logo_url || "",
                           isDefault: false
                         });
                         resolve();
@@ -1939,6 +1961,7 @@ app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
                       reviewText: camp.default_review || "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
                       googleReviewUrl: camp.google_review_url,
                       campaignName: camp.name,
+                      logoUrl: camp.logo_url || "",
                       isDefault: true
                     });
                     resolve();
@@ -2087,7 +2110,7 @@ app.get("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => {
 
 // Admin endpoint: Create Campaign
 app.post("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => {
-  const { name, slug, google_review_url, default_review } = req.body;
+  const { name, slug, google_review_url, default_review, logo_url } = req.body;
   if (!name || !slug || !google_review_url) {
     return res.status(400).json({ error: "Name, Slug, and Google Review URL are required" });
   }
@@ -2096,8 +2119,8 @@ app.post("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => 
   try {
     if (pool) {
       const [result]: any = await pool.query(
-        "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, is_active) VALUES (?, ?, ?, ?, 1)",
-        [name.trim(), cleanSlug, google_review_url.trim(), default_review ? default_review.trim() : ""]
+        "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, logo_url, is_active) VALUES (?, ?, ?, ?, ?, 1)",
+        [name.trim(), cleanSlug, google_review_url.trim(), default_review ? default_review.trim() : "", logo_url ? logo_url.trim() : ""]
       );
       return res.json({ success: true, id: result.insertId });
     }
@@ -2105,8 +2128,8 @@ app.post("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => 
     if (sqliteDb) {
       return new Promise<void>((resolve) => {
         sqliteDb.run(
-          "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, is_active) VALUES (?, ?, ?, ?, 1)",
-          [name.trim(), cleanSlug, google_review_url.trim(), default_review ? default_review.trim() : ""],
+          "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, logo_url, is_active) VALUES (?, ?, ?, ?, ?, 1)",
+          [name.trim(), cleanSlug, google_review_url.trim(), default_review ? default_review.trim() : "", logo_url ? logo_url.trim() : ""],
           function (this: any, err: any) {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, id: this.lastID });
@@ -2124,6 +2147,7 @@ app.post("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => 
       slug: cleanSlug,
       google_review_url: google_review_url.trim(),
       default_review: default_review ? default_review.trim() : "",
+      logo_url: logo_url ? logo_url.trim() : "",
       is_active: 1,
       created_at: new Date().toISOString()
     };
@@ -2138,14 +2162,14 @@ app.post("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => 
 // Admin endpoint: Update Campaign
 app.put("/api/admin/reviews/campaigns/:id", authenticateToken, async (req, res) => {
   const campId = parseInt(req.params.id);
-  const { name, slug, google_review_url, default_review, is_active } = req.body;
+  const { name, slug, google_review_url, default_review, logo_url, is_active } = req.body;
   const cleanSlug = slug ? slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "") : undefined;
 
   try {
     if (pool) {
       await pool.query(
-        "UPDATE review_campaigns SET name = ?, slug = ?, google_review_url = ?, default_review = ?, is_active = ? WHERE id = ?",
-        [name, cleanSlug, google_review_url, default_review, is_active !== undefined ? is_active : 1, campId]
+        "UPDATE review_campaigns SET name = ?, slug = ?, google_review_url = ?, default_review = ?, logo_url = ?, is_active = ? WHERE id = ?",
+        [name, cleanSlug, google_review_url, default_review, logo_url !== undefined ? logo_url : "", is_active !== undefined ? is_active : 1, campId]
       );
       return res.json({ success: true });
     }
@@ -2153,8 +2177,8 @@ app.put("/api/admin/reviews/campaigns/:id", authenticateToken, async (req, res) 
     if (sqliteDb) {
       return new Promise<void>((resolve) => {
         sqliteDb.run(
-          "UPDATE review_campaigns SET name = ?, slug = ?, google_review_url = ?, default_review = ?, is_active = ? WHERE id = ?",
-          [name, cleanSlug, google_review_url, default_review, is_active !== undefined ? is_active : 1, campId],
+          "UPDATE review_campaigns SET name = ?, slug = ?, google_review_url = ?, default_review = ?, logo_url = ?, is_active = ? WHERE id = ?",
+          [name, cleanSlug, google_review_url, default_review, logo_url !== undefined ? logo_url : "", is_active !== undefined ? is_active : 1, campId],
           (err: any) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true });
@@ -2173,6 +2197,7 @@ app.put("/api/admin/reviews/campaigns/:id", authenticateToken, async (req, res) 
         slug: cleanSlug || fileData.campaigns[campIndex].slug,
         google_review_url: google_review_url || fileData.campaigns[campIndex].google_review_url,
         default_review: default_review !== undefined ? default_review : fileData.campaigns[campIndex].default_review,
+        logo_url: logo_url !== undefined ? logo_url : (fileData.campaigns[campIndex].logo_url || ""),
         is_active: is_active !== undefined ? is_active : fileData.campaigns[campIndex].is_active
       };
       savePersistentReviewsData(fileData);
@@ -2375,16 +2400,18 @@ app.delete("/api/admin/reviews/item/:id", authenticateToken, async (req, res) =>
   }
 });
 
-// Direct HTML route handler for swarnaamahal_review.html
-app.get("/swarnaamahal_review.html", (req, res) => {
-  const publicPath = path.join(process.cwd(), "public", "swarnaamahal_review.html");
-  const distPath = path.join(process.cwd(), "dist", "swarnaamahal_review.html");
+// Direct HTML or dynamic route handler for review pages
+app.get(["/swarnaamahal_review.html", "/:slug_review.html", "/review/:slug"], (req, res, next) => {
+  const possibleFile = req.path.replace(/^\//, "");
+  const publicPath = path.join(process.cwd(), "public", possibleFile);
+  const distPath = path.join(process.cwd(), "dist", possibleFile);
   if (fs.existsSync(publicPath)) {
     return res.sendFile(publicPath);
   } else if (fs.existsSync(distPath)) {
     return res.sendFile(distPath);
   }
-  res.status(404).send("Review page not found");
+  // Otherwise pass to next middleware (SPA fallback will serve index.html with React router)
+  next();
 });
 
 async function startServer() {

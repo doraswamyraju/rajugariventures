@@ -10,6 +10,7 @@ import Process from './pages/Process';
 import Contact from './pages/Contact';
 import CertificateIssuance from './pages/CertificateIssuance';
 import AIMasterclass from './pages/AIMasterclass';
+import ClientReviewLanding from './pages/ClientReviewLanding';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
 
@@ -37,6 +38,13 @@ export default function App() {
             <Route path="/ai-masterclass" element={<AIMasterclass />} />
             <Route path="/masterclass" element={<AIMasterclass />} />
             
+            {/* Google Review Campaign Landing Pages */}
+            <Route path="/review/:slug" element={<ClientReviewLanding />} />
+            <Route path="/:slug_review.html" element={<ClientReviewLanding />} />
+            <Route path="/:slug_review" element={<ClientReviewLanding />} />
+            <Route path="/swarnaamahal_review.html" element={<ClientReviewLanding />} />
+            <Route path="/swarnaamahal" element={<ClientReviewLanding />} />
+
             {/* Admin Routes */}
             <Route path="/admin/login" element={<Login />} />
             <Route path="/admin/dashboard" element={
