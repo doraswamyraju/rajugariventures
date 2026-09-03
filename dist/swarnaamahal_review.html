@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Review Shri Swarnaamahal Jewellers | Share Your Love</title>
+  <meta name="description" content="Share your valuable 5-star review for Shri Swarnaamahal Jewellers, Tirupati on Google Maps." />
+  
+  <!-- Google Fonts: Playfair Display for luxury heading, Plus Jakarta Sans for clean body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --gold-primary: #D4AF37;
+      --gold-light: #FDF3CD;
+      --gold-dark: #997A15;
+      --gold-gradient: linear-gradient(135deg, #FFE27D 0%, #D4AF37 50%, #A67C1E 100%);
+      --bg-dark: #0A0D14;
+      --bg-card: rgba(22, 27, 39, 0.85);
+      --text-white: #FFFFFF;
+      --text-muted: #94A3B8;
+      --google-blue: #4285F4;
+      --google-red: #EA4335;
+      --google-yellow: #FBBC05;
+      --google-green: #34A853;
+      --shadow-gold: 0 10px 30px -5px rgba(212, 175, 55, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.18) 0%, transparent 65%),
+        radial-gradient(circle at 100% 100%, rgba(66, 133, 244, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(234, 67, 53, 0.1) 0%, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Main Card */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: 28px;
+      padding: 2.25rem 1.5rem;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gold-gradient);
+    }
+
+    /* Header & Standee Branding */
+    .badge-google {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.35rem 0.85rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-title-shri {
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.25em;
+      color: #E2E8F0;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .brand-title-main {
+      font-family: 'Cinzel', serif;
+      font-size: 1.65rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #FFF0B8 0%, #D4AF37 50%, #F59E0B 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+    }
+
+    .brand-title-sub {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-style: italic;
+      color: #E5E7EB;
+      margin-bottom: 1.25rem;
+    }
+
+    .stars-display {
+      display: flex;
+      justify-content: center;
+      gap: 0.25rem;
+      color: #FBBC05;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      filter: drop-shadow(0 2px 8px rgba(251, 188, 5, 0.5));
+    }
+
+    .rating-caption {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.75rem;
+    }
+
+    /* Steps Guide */
+    .steps-container {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 1rem;
+      margin-bottom: 1.75rem;
+      text-align: left;
+    }
+
+    .steps-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold-primary);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: #CBD5E1;
+      margin-bottom: 0.5rem;
+    }
+
+    .step-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(212, 175, 55, 0.2);
+      color: var(--gold-primary);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* Big Action CTA Button */
+    .btn-share {
+      width: 100%;
+      background: var(--gold-gradient);
+      color: #0A0D14;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1.15rem 1.5rem;
+      border-radius: 18px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      box-shadow: var(--shadow-gold), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-share::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        rgba(255, 255, 255, 0) 20%,
+        rgba(255, 255, 255, 0.35) 50%,
+        rgba(255, 255, 255, 0) 80%
+      );
+      transform: rotate(30deg);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(30deg); }
+      100% { transform: translateX(100%) rotate(30deg); }
+    }
+
+    .btn-share:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(212, 175, 55, 0.6);
+    }
+
+    .btn-share:active {
+      transform: scale(0.98);
+    }
+
+    .btn-share.loading {
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .heart-icon {
+      animation: pulseHeart 1.5s infinite;
+      display: inline-block;
+    }
+
+    @keyframes pulseHeart {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+    }
+
+    /* Modal / Success Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(5, 7, 12, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.35s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-card {
+      background: #111622;
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      border-radius: 24px;
+      padding: 2rem 1.5rem;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 50px rgba(212, 175, 55, 0.2);
+      transform: scale(0.9) translateY(20px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-icon-badge {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(52, 168, 83, 0.15);
+      border: 2px solid #34A853;
+      color: #34A853;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 1rem;
+    }
+
+    .modal-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .copied-preview-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px dashed rgba(212, 175, 55, 0.4);
+      border-radius: 14px;
+      padding: 1rem;
+      font-size: 0.88rem;
+      color: #E2E8F0;
+      line-height: 1.45;
+      text-align: left;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+
+    .copied-tag {
+      position: absolute;
+      top: -10px;
+      right: 12px;
+      background: #34A853;
+      color: #FFFFFF;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .redirect-countdown-text {
+      font-size: 0.85rem;
+      color: #94A3B8;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .btn-manual-redirect {
+      width: 100%;
+      background: #4285F4;
+      color: #FFFFFF;
+      font-weight: 700;
+      padding: 0.9rem 1.25rem;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.35);
+    }
+
+    .btn-manual-redirect:hover {
+      background: #3367D6;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.35);
+      letter-spacing: 0.05em;
+    }
+
+    .footer a {
+      color: var(--gold-primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+      <!-- Google Standee Header -->
+      <div class="badge-google">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+          <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+          <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8 0-1.3.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
+          <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3.1l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.3C3.7 20 7.5 23 12 23z"/>
+        </svg>
+        <span>Google Verified Review</span>
+      </div>
+
+      <!-- Business Branding -->
+      <div class="brand-title-shri">Shri</div>
+      <h1 class="brand-title-main">SWARNAAMAHAL</h1>
+      <div class="brand-title-sub">Jewellers</div>
+
+      <!-- Star Display -->
+      <div class="stars-display">
+        ★ ★ ★ ★ ★
+      </div>
+      <div class="rating-caption">
+        Please take a moment to share your 5-star experience!
+      </div>
+
+      <!-- 3-Step Guide -->
+      <div class="steps-container">
+        <div class="steps-title">
+          <span>✨</span> How it works
+        </div>
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div>Tap <strong>"Share your love"</strong> below</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div>A genuine review will be <strong>auto-copied</strong></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div>Google Maps opens — select <strong>5 Stars ★★★★★ & Paste!</strong></div>
+        </div>
+      </div>
+
+      <!-- Main Action Button -->
+      <button id="shareLoveBtn" class="btn-share" onclick="handleShareLove()">
+        <span class="heart-icon">❤️</span>
+        <span id="btnText">Share your love</span>
+      </button>
+    </div>
+
+    <div class="footer">
+      Powered by <a href="https://rajugariventures.com" target="_blank">Rajugari Ventures</a>
+    </div>
+  </div>
+
+  <!-- Success / Redirect Modal -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-icon-badge">✓</div>
+      <h2 class="modal-title">Review Copied!</h2>
+      <p class="modal-desc">Your unique review has been copied to your clipboard.</p>
+
+      <div class="copied-preview-box">
+        <div class="copied-tag">Copied</div>
+        <div id="modalReviewText">"Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best in Tirupati!"</div>
+      </div>
+
+      <div class="redirect-countdown-text" id="countdownText">
+        Redirecting to Google Maps in 2 seconds...
+      </div>
+
+      <a id="directMapLink" href="https://maps.app.goo.gl/99SE68munnEL7ehTA" target="_blank" class="btn-manual-redirect">
+        <span>Open Google Maps Now</span>
+        <span>➔</span>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_REVIEW_URL = "https://maps.app.goo.gl/99SE68munnEL7ehTA";
+    const DEFAULT_FALLBACK_REVIEW = "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!";
+    const CAMPAIGN_SLUG = "swarnaamahal";
+
+    let targetUrl = DEFAULT_REVIEW_URL;
+    let isProcessing = false;
+
+    // Fallback clipboard copying method for older devices
+    function copyTextFallback(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-999999px";
+      textarea.style.top = "-999999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    async function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (err) {
+          console.warn("navigator.clipboard failed, using fallback:", err);
+          copyTextFallback(text);
+          return true;
+        }
+      } else {
+        copyTextFallback(text);
+        return true;
+      }
+    }
+
+    async function handleShareLove() {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      const btn = document.getElementById("shareLoveBtn");
+      const btnText = document.getElementById("btnText");
+      btn.classList.add("loading");
+      btnText.textContent = "Copying review...";
+
+      let reviewText = DEFAULT_FALLBACK_REVIEW;
+
+      try {
+        const response = await fetch(`/api/reviews/campaign/${CAMPAIGN_SLUG}/claim`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.reviewText) reviewText = data.reviewText;
+          if (data.googleReviewUrl) targetUrl = data.googleReviewUrl;
+        }
+      } catch (e) {
+        console.warn("Error claiming review from API, using default:", e);
+      }
+
+      // 1. Copy text to clipboard
+      await copyToClipboard(reviewText);
+
+      // 2. Update UI Modal
+      document.getElementById("modalReviewText").textContent = `"${reviewText}"`;
+      document.getElementById("directMapLink").href = targetUrl;
+      document.getElementById("modalOverlay").classList.add("active");
+
+      // 3. Countdown and automatic redirect
+      let count = 2;
+      const countdownEl = document.getElementById("countdownText");
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdownEl.textContent = `Redirecting to Google Maps in ${count} second...`;
+        } else {
+          clearInterval(interval);
+          countdownEl.textContent = `Opening Google Maps...`;
+          window.location.href = targetUrl;
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

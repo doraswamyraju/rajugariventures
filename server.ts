@@ -286,6 +286,60 @@ async function initDB() {
         ('Masterclass Completion Ceremony', 'certificate', 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80', 'Tirupati Center')`);
     }
 
+    // Initialize Review Campaigns & Pool Tables in MySQL
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS review_campaigns (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        google_review_url TEXT NOT NULL,
+        default_review TEXT,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS review_pool (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        campaign_id INT NOT NULL,
+        review_text TEXT NOT NULL,
+        is_used TINYINT(1) DEFAULT 0,
+        used_at DATETIME NULL,
+        claimed_ip VARCHAR(100) NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed default Shri Swarnaamahal Jewellers campaign in MySQL if missing
+    const [campRows]: any = await pool.query("SELECT id FROM review_campaigns WHERE slug = 'swarnaamahal'");
+    if (campRows.length === 0) {
+      const [insCamp]: any = await pool.query(
+        "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, is_active) VALUES (?, ?, ?, ?, ?)",
+        [
+          "Shri Swarnaamahal Jewellers",
+          "swarnaamahal",
+          "https://maps.app.goo.gl/99SE68munnEL7ehTA",
+          "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+          1
+        ]
+      );
+      const campId = insCamp.insertId;
+      const initialReviews = [
+        "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best in Tirupati!",
+        "Wonderful collection of traditional and modern gold jewellery. The staff was very polite and pricing is genuine.",
+        "Best jewellery shopping experience in Tirupati! Transparent billing, pure gold quality, and exquisite bridal collections.",
+        "Shri Swarnaamahal Jewellers has the finest craftsmanship and courteous staff. Highly recommended for all wedding shopping.",
+        "Great ambience, honest gold purity certification, and very helpful customer service. Will definitely visit again!",
+        "Outstanding designs in light-weight gold and diamond ornaments. Completely trustworthy jewellers!",
+        "Superb customer experience. The staff explained gold rates and hallmark clearly. Very happy with my purchase.",
+        "Authentic 916 hallmarked jewellery with great design variety. Highly impressed with their honesty and service."
+      ];
+      for (const rev of initialReviews) {
+        await pool.query("INSERT INTO review_pool (campaign_id, review_text, is_used) VALUES (?, ?, 0)", [campId, rev]);
+      }
+    }
+
     console.log("MySQL Database initialized successfully.");
   } catch (error: any) {
     console.warn("Notice: MySQL connection failed. Initializing File Database fallback...", error.message);
@@ -402,8 +456,61 @@ async function initDB() {
               ('Masterclass Completion Ceremony', 'certificate', 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80', 'Tirupati Center')`);
           }
         });
+
+        // Review Campaigns & Pool Tables in SQLite
+        sqliteDb.run(`CREATE TABLE IF NOT EXISTS review_campaigns (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          slug TEXT UNIQUE NOT NULL,
+          google_review_url TEXT NOT NULL,
+          default_review TEXT,
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        sqliteDb.run(`CREATE TABLE IF NOT EXISTS review_pool (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          review_text TEXT NOT NULL,
+          is_used INTEGER DEFAULT 0,
+          used_at DATETIME NULL,
+          claimed_ip TEXT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        sqliteDb.get("SELECT COUNT(*) as count FROM review_campaigns WHERE slug = 'swarnaamahal'", (err: any, row: any) => {
+          if (row && row.count === 0) {
+            sqliteDb.run(
+              `INSERT INTO review_campaigns (name, slug, google_review_url, default_review, is_active) VALUES (?, ?, ?, ?, 1)`,
+              [
+                "Shri Swarnaamahal Jewellers",
+                "swarnaamahal",
+                "https://maps.app.goo.gl/99SE68munnEL7ehTA",
+                "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!"
+              ],
+              function (this: any, err2: any) {
+                if (!err2 && this.lastID) {
+                  const campId = this.lastID;
+                  const initialReviews = [
+                    "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best in Tirupati!",
+                    "Wonderful collection of traditional and modern gold jewellery. The staff was very polite and pricing is genuine.",
+                    "Best jewellery shopping experience in Tirupati! Transparent billing, pure gold quality, and exquisite bridal collections.",
+                    "Shri Swarnaamahal Jewellers has the finest craftsmanship and courteous staff. Highly recommended for all wedding shopping.",
+                    "Great ambience, honest gold purity certification, and very helpful customer service. Will definitely visit again!",
+                    "Outstanding designs in light-weight gold and diamond ornaments. Completely trustworthy jewellers!",
+                    "Superb customer experience. The staff explained gold rates and hallmark clearly. Very happy with my purchase.",
+                    "Authentic 916 hallmarked jewellery with great design variety. Highly impressed with their honesty and service."
+                  ];
+                  initialReviews.forEach((rev) => {
+                    sqliteDb.run("INSERT INTO review_pool (campaign_id, review_text, is_used) VALUES (?, ?, 0)", [campId, rev]);
+                  });
+                }
+              }
+            );
+          }
+        });
       });
-      console.log("SQLite File Database initialized successfully with admin user and Masterclass tables.");
+      console.log("SQLite File Database initialized successfully with admin user, Masterclass, and Review tables.");
     }
     } catch (sqliteErr) {
       console.error("SQLite initialization failed:", sqliteErr);
@@ -1360,6 +1467,758 @@ app.get("/api/masterclass/admin/registrations", authenticateToken, async (req, r
   }
 });
 
+// ----------------------------------------------------
+// GOOGLE REVIEWS CAMPAIGN SYSTEM
+// ----------------------------------------------------
+
+const reviewsJsonPath = path.join(persistentDir, "reviews_data.json");
+
+function getPersistentReviewsData() {
+  if (!fs.existsSync(reviewsJsonPath)) {
+    const initialData = {
+      campaigns: [
+        {
+          id: 1,
+          name: "Shri Swarnaamahal Jewellers",
+          slug: "swarnaamahal",
+          google_review_url: "https://maps.app.goo.gl/99SE68munnEL7ehTA",
+          default_review: "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+          is_active: 1,
+          created_at: new Date().toISOString()
+        }
+      ],
+      reviews: [
+        {
+          id: 1,
+          campaign_id: 1,
+          review_text: "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best in Tirupati!",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          campaign_id: 1,
+          review_text: "Wonderful collection of traditional and modern gold jewellery. The staff was very polite and pricing is genuine.",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 3,
+          campaign_id: 1,
+          review_text: "Best jewellery shopping experience in Tirupati! Transparent billing, pure gold quality, and exquisite bridal collections.",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 4,
+          campaign_id: 1,
+          review_text: "Shri Swarnaamahal Jewellers has the finest craftsmanship and courteous staff. Highly recommended for all wedding shopping.",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 5,
+          campaign_id: 1,
+          review_text: "Great ambience, honest gold purity certification, and very helpful customer service. Will definitely visit again!",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 6,
+          campaign_id: 1,
+          review_text: "Outstanding designs in light-weight gold and diamond ornaments. Completely trustworthy jewellers!",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 7,
+          campaign_id: 1,
+          review_text: "Superb customer experience. The staff explained gold rates and hallmark clearly. Very happy with my purchase.",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 8,
+          campaign_id: 1,
+          review_text: "Authentic 916 hallmarked jewellery with great design variety. Highly impressed with their honesty and service.",
+          is_used: 0,
+          used_at: null,
+          claimed_ip: null,
+          created_at: new Date().toISOString()
+        }
+      ]
+    };
+    try {
+      fs.writeFileSync(reviewsJsonPath, JSON.stringify(initialData, null, 2), "utf8");
+    } catch (e) {
+      console.warn("Failed to write initial reviews data JSON:", e);
+    }
+    return initialData;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(reviewsJsonPath, "utf8"));
+  } catch (e) {
+    return { campaigns: [], reviews: [] };
+  }
+}
+
+function savePersistentReviewsData(data: any) {
+  try {
+    fs.writeFileSync(reviewsJsonPath, JSON.stringify(data, null, 2), "utf8");
+  } catch (e) {
+    console.error("Failed to save reviews persistent data:", e);
+  }
+}
+
+// Public endpoint: Fetch Campaign Info
+app.get("/api/reviews/campaign/:slug/info", async (req, res) => {
+  const rawSlug = req.params.slug.trim().toLowerCase();
+  const cleanSlug = rawSlug.replace(/\.html$/, "").replace(/_review$/, "");
+  const possibleSlugs = [rawSlug, cleanSlug, `${cleanSlug}_review`, `${cleanSlug}_review.html`];
+
+  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown";
+
+  try {
+    if (pool) {
+      const [campaigns]: any = await pool.query(
+        "SELECT id, name, slug, google_review_url, default_review, is_active FROM review_campaigns WHERE slug IN (?) AND is_active = 1 LIMIT 1",
+        [possibleSlugs]
+      );
+      if (campaigns && campaigns.length > 0) {
+        const camp = campaigns[0];
+        const [counts]: any = await pool.query(
+          "SELECT COUNT(*) as total, SUM(CASE WHEN is_used = 0 THEN 1 ELSE 0 END) as unused FROM review_pool WHERE campaign_id = ?",
+          [camp.id]
+        );
+        return res.json({
+          success: true,
+          campaign: {
+            id: camp.id,
+            name: camp.name,
+            slug: camp.slug,
+            google_review_url: camp.google_review_url,
+            total_reviews: counts[0]?.total || 0,
+            unused_reviews: counts[0]?.unused || 0
+          }
+        });
+      }
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.get(
+          `SELECT id, name, slug, google_review_url, default_review, is_active FROM review_campaigns WHERE (slug = ? OR slug = ? OR slug = ? OR slug = ?) AND is_active = 1 LIMIT 1`,
+          [possibleSlugs[0], possibleSlugs[1], possibleSlugs[2], possibleSlugs[3]],
+          (err: any, camp: any) => {
+            if (camp) {
+              sqliteDb.get(
+                "SELECT COUNT(*) as total, SUM(CASE WHEN is_used = 0 THEN 1 ELSE 0 END) as unused FROM review_pool WHERE campaign_id = ?",
+                [camp.id],
+                (err2: any, countRow: any) => {
+                  res.json({
+                    success: true,
+                    campaign: {
+                      id: camp.id,
+                      name: camp.name,
+                      slug: camp.slug,
+                      google_review_url: camp.google_review_url,
+                      total_reviews: countRow?.total || 0,
+                      unused_reviews: countRow?.unused || 0
+                    }
+                  });
+                  resolve();
+                }
+              );
+            } else {
+              const fileData = getPersistentReviewsData();
+              const found = fileData.campaigns.find((c: any) => possibleSlugs.includes(c.slug.toLowerCase()));
+              if (found) {
+                const campReviews = fileData.reviews.filter((r: any) => r.campaign_id === found.id);
+                res.json({
+                  success: true,
+                  campaign: {
+                    id: found.id,
+                    name: found.name,
+                    slug: found.slug,
+                    google_review_url: found.google_review_url,
+                    total_reviews: campReviews.length,
+                    unused_reviews: campReviews.filter((r: any) => !r.is_used).length
+                  }
+                });
+              } else {
+                res.status(404).json({ error: "Campaign not found" });
+              }
+              resolve();
+            }
+          }
+        );
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    const found = fileData.campaigns.find((c: any) => possibleSlugs.includes(c.slug.toLowerCase()));
+    if (found) {
+      const campReviews = fileData.reviews.filter((r: any) => r.campaign_id === found.id);
+      return res.json({
+        success: true,
+        campaign: {
+          id: found.id,
+          name: found.name,
+          slug: found.slug,
+          google_review_url: found.google_review_url,
+          total_reviews: campReviews.length,
+          unused_reviews: campReviews.filter((r: any) => !r.is_used).length
+        }
+      });
+    }
+
+    return res.status(404).json({ error: "Campaign not found" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public endpoint: Atomically Claim Next Unused Review (One-Time Per Click)
+app.post("/api/reviews/campaign/:slug/claim", async (req, res) => {
+  const rawSlug = req.params.slug.trim().toLowerCase();
+  const cleanSlug = rawSlug.replace(/\.html$/, "").replace(/_review$/, "");
+  const possibleSlugs = [rawSlug, cleanSlug, `${cleanSlug}_review`, `${cleanSlug}_review.html`];
+  const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").slice(0, 95);
+
+  try {
+    if (pool) {
+      const [campaigns]: any = await pool.query(
+        "SELECT * FROM review_campaigns WHERE slug IN (?) AND is_active = 1 LIMIT 1",
+        [possibleSlugs]
+      );
+
+      if (campaigns && campaigns.length > 0) {
+        const camp = campaigns[0];
+        // Find next unused review
+        const [unusedRows]: any = await pool.query(
+          "SELECT id, review_text FROM review_pool WHERE campaign_id = ? AND is_used = 0 ORDER BY id ASC LIMIT 1",
+          [camp.id]
+        );
+
+        if (unusedRows && unusedRows.length > 0) {
+          const rev = unusedRows[0];
+          await pool.query(
+            "UPDATE review_pool SET is_used = 1, used_at = NOW(), claimed_ip = ? WHERE id = ?",
+            [clientIp, rev.id]
+          );
+
+          return res.json({
+            success: true,
+            reviewId: rev.id,
+            reviewText: rev.review_text,
+            googleReviewUrl: camp.google_review_url,
+            campaignName: camp.name,
+            isDefault: false
+          });
+        } else {
+          // Pool exhausted, deliver default fallback review
+          return res.json({
+            success: true,
+            reviewId: null,
+            reviewText: camp.default_review || "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+            googleReviewUrl: camp.google_review_url,
+            campaignName: camp.name,
+            isDefault: true,
+            message: "All pre-uploaded reviews claimed. Delivered default review."
+          });
+        }
+      }
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.get(
+          `SELECT * FROM review_campaigns WHERE (slug = ? OR slug = ? OR slug = ? OR slug = ?) AND is_active = 1 LIMIT 1`,
+          [possibleSlugs[0], possibleSlugs[1], possibleSlugs[2], possibleSlugs[3]],
+          (err: any, camp: any) => {
+            if (camp) {
+              sqliteDb.get(
+                "SELECT id, review_text FROM review_pool WHERE campaign_id = ? AND is_used = 0 ORDER BY id ASC LIMIT 1",
+                [camp.id],
+                (err2: any, rev: any) => {
+                  if (rev) {
+                    const now = new Date().toISOString();
+                    sqliteDb.run(
+                      "UPDATE review_pool SET is_used = 1, used_at = ?, claimed_ip = ? WHERE id = ?",
+                      [now, clientIp, rev.id],
+                      (err3: any) => {
+                        res.json({
+                          success: true,
+                          reviewId: rev.id,
+                          reviewText: rev.review_text,
+                          googleReviewUrl: camp.google_review_url,
+                          campaignName: camp.name,
+                          isDefault: false
+                        });
+                        resolve();
+                      }
+                    );
+                  } else {
+                    res.json({
+                      success: true,
+                      reviewId: null,
+                      reviewText: camp.default_review || "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+                      googleReviewUrl: camp.google_review_url,
+                      campaignName: camp.name,
+                      isDefault: true
+                    });
+                    resolve();
+                  }
+                }
+              );
+            } else {
+              // Check JSON File
+              const fileData = getPersistentReviewsData();
+              const foundCamp = fileData.campaigns.find((c: any) => possibleSlugs.includes(c.slug.toLowerCase()));
+              if (foundCamp) {
+                const nextRev = fileData.reviews.find((r: any) => r.campaign_id === foundCamp.id && !r.is_used);
+                if (nextRev) {
+                  nextRev.is_used = 1;
+                  nextRev.used_at = new Date().toISOString();
+                  nextRev.claimed_ip = clientIp;
+                  savePersistentReviewsData(fileData);
+                  res.json({
+                    success: true,
+                    reviewId: nextRev.id,
+                    reviewText: nextRev.review_text,
+                    googleReviewUrl: foundCamp.google_review_url,
+                    campaignName: foundCamp.name,
+                    isDefault: false
+                  });
+                } else {
+                  res.json({
+                    success: true,
+                    reviewId: null,
+                    reviewText: foundCamp.default_review || "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+                    googleReviewUrl: foundCamp.google_review_url,
+                    campaignName: foundCamp.name,
+                    isDefault: true
+                  });
+                }
+              } else {
+                res.status(404).json({ error: "Campaign not found" });
+              }
+              resolve();
+            }
+          }
+        );
+      });
+    }
+
+    // JSON file fallback
+    const fileData = getPersistentReviewsData();
+    const foundCamp = fileData.campaigns.find((c: any) => possibleSlugs.includes(c.slug.toLowerCase()));
+    if (foundCamp) {
+      const nextRev = fileData.reviews.find((r: any) => r.campaign_id === foundCamp.id && !r.is_used);
+      if (nextRev) {
+        nextRev.is_used = 1;
+        nextRev.used_at = new Date().toISOString();
+        nextRev.claimed_ip = clientIp;
+        savePersistentReviewsData(fileData);
+        return res.json({
+          success: true,
+          reviewId: nextRev.id,
+          reviewText: nextRev.review_text,
+          googleReviewUrl: foundCamp.google_review_url,
+          campaignName: foundCamp.name,
+          isDefault: false
+        });
+      } else {
+        return res.json({
+          success: true,
+          reviewId: null,
+          reviewText: foundCamp.default_review || "Extremely satisfied with the authentic gold designs and warm hospitality at Shri Swarnaamahal Jewellers. Best jewellery shop in Tirupati!",
+          googleReviewUrl: foundCamp.google_review_url,
+          campaignName: foundCamp.name,
+          isDefault: true
+        });
+      }
+    }
+
+    return res.status(404).json({ error: "Campaign not found" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: List all campaigns with stats
+app.get("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => {
+  try {
+    if (pool) {
+      const [campaigns]: any = await pool.query(`
+        SELECT 
+          c.*,
+          COUNT(r.id) as total_reviews,
+          SUM(CASE WHEN r.is_used = 0 THEN 1 ELSE 0 END) as unused_reviews,
+          SUM(CASE WHEN r.is_used = 1 THEN 1 ELSE 0 END) as used_reviews
+        FROM review_campaigns c
+        LEFT JOIN review_pool r ON c.id = r.campaign_id
+        GROUP BY c.id
+        ORDER BY c.id DESC
+      `);
+      return res.json(campaigns || []);
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.all(`
+          SELECT 
+            c.*,
+            COUNT(r.id) as total_reviews,
+            SUM(CASE WHEN r.is_used = 0 THEN 1 ELSE 0 END) as unused_reviews,
+            SUM(CASE WHEN r.is_used = 1 THEN 1 ELSE 0 END) as used_reviews
+          FROM review_campaigns c
+          LEFT JOIN review_pool r ON c.id = r.campaign_id
+          GROUP BY c.id
+          ORDER BY c.id DESC
+        `, (err: any, rows: any) => {
+          if (err) {
+            const fileData = getPersistentReviewsData();
+            res.json(fileData.campaigns || []);
+          } else {
+            res.json(rows || []);
+          }
+          resolve();
+        });
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    const result = fileData.campaigns.map((c: any) => {
+      const rList = fileData.reviews.filter((r: any) => r.campaign_id === c.id);
+      return {
+        ...c,
+        total_reviews: rList.length,
+        unused_reviews: rList.filter((r: any) => !r.is_used).length,
+        used_reviews: rList.filter((r: any) => r.is_used).length
+      };
+    });
+    return res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Create Campaign
+app.post("/api/admin/reviews/campaigns", authenticateToken, async (req, res) => {
+  const { name, slug, google_review_url, default_review } = req.body;
+  if (!name || !slug || !google_review_url) {
+    return res.status(400).json({ error: "Name, Slug, and Google Review URL are required" });
+  }
+  const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+
+  try {
+    if (pool) {
+      const [result]: any = await pool.query(
+        "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, is_active) VALUES (?, ?, ?, ?, 1)",
+        [name.trim(), cleanSlug, google_review_url.trim(), default_review ? default_review.trim() : ""]
+      );
+      return res.json({ success: true, id: result.insertId });
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.run(
+          "INSERT INTO review_campaigns (name, slug, google_review_url, default_review, is_active) VALUES (?, ?, ?, ?, 1)",
+          [name.trim(), cleanSlug, google_review_url.trim(), default_review ? default_review.trim() : ""],
+          function (this: any, err: any) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id: this.lastID });
+            resolve();
+          }
+        );
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    const newId = fileData.campaigns.length > 0 ? Math.max(...fileData.campaigns.map((c: any) => c.id)) + 1 : 1;
+    const newCamp = {
+      id: newId,
+      name: name.trim(),
+      slug: cleanSlug,
+      google_review_url: google_review_url.trim(),
+      default_review: default_review ? default_review.trim() : "",
+      is_active: 1,
+      created_at: new Date().toISOString()
+    };
+    fileData.campaigns.push(newCamp);
+    savePersistentReviewsData(fileData);
+    res.json({ success: true, id: newId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Update Campaign
+app.put("/api/admin/reviews/campaigns/:id", authenticateToken, async (req, res) => {
+  const campId = parseInt(req.params.id);
+  const { name, slug, google_review_url, default_review, is_active } = req.body;
+  const cleanSlug = slug ? slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "") : undefined;
+
+  try {
+    if (pool) {
+      await pool.query(
+        "UPDATE review_campaigns SET name = ?, slug = ?, google_review_url = ?, default_review = ?, is_active = ? WHERE id = ?",
+        [name, cleanSlug, google_review_url, default_review, is_active !== undefined ? is_active : 1, campId]
+      );
+      return res.json({ success: true });
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.run(
+          "UPDATE review_campaigns SET name = ?, slug = ?, google_review_url = ?, default_review = ?, is_active = ? WHERE id = ?",
+          [name, cleanSlug, google_review_url, default_review, is_active !== undefined ? is_active : 1, campId],
+          (err: any) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+            resolve();
+          }
+        );
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    const campIndex = fileData.campaigns.findIndex((c: any) => c.id === campId);
+    if (campIndex !== -1) {
+      fileData.campaigns[campIndex] = {
+        ...fileData.campaigns[campIndex],
+        name: name || fileData.campaigns[campIndex].name,
+        slug: cleanSlug || fileData.campaigns[campIndex].slug,
+        google_review_url: google_review_url || fileData.campaigns[campIndex].google_review_url,
+        default_review: default_review !== undefined ? default_review : fileData.campaigns[campIndex].default_review,
+        is_active: is_active !== undefined ? is_active : fileData.campaigns[campIndex].is_active
+      };
+      savePersistentReviewsData(fileData);
+      return res.json({ success: true });
+    }
+    return res.status(404).json({ error: "Campaign not found" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Delete Campaign
+app.delete("/api/admin/reviews/campaigns/:id", authenticateToken, async (req, res) => {
+  const campId = parseInt(req.params.id);
+  try {
+    if (pool) {
+      await pool.query("DELETE FROM review_pool WHERE campaign_id = ?", [campId]);
+      await pool.query("DELETE FROM review_campaigns WHERE id = ?", [campId]);
+      return res.json({ success: true });
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.run("DELETE FROM review_pool WHERE campaign_id = ?", [campId], () => {
+          sqliteDb.run("DELETE FROM review_campaigns WHERE id = ?", [campId], (err: any) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+            resolve();
+          });
+        });
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    fileData.campaigns = fileData.campaigns.filter((c: any) => c.id !== campId);
+    fileData.reviews = fileData.reviews.filter((r: any) => r.campaign_id !== campId);
+    savePersistentReviewsData(fileData);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Get all reviews for a campaign
+app.get("/api/admin/reviews/campaigns/:id/reviews", authenticateToken, async (req, res) => {
+  const campId = parseInt(req.params.id);
+  try {
+    if (pool) {
+      const [rows]: any = await pool.query(
+        "SELECT * FROM review_pool WHERE campaign_id = ? ORDER BY is_used ASC, id DESC",
+        [campId]
+      );
+      return res.json(rows || []);
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.all(
+          "SELECT * FROM review_pool WHERE campaign_id = ? ORDER BY is_used ASC, id DESC",
+          [campId],
+          (err: any, rows: any) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows || []);
+            resolve();
+          }
+        );
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    const rows = fileData.reviews.filter((r: any) => r.campaign_id === campId);
+    res.json(rows.sort((a: any, b: any) => (a.is_used - b.is_used) || (b.id - a.id)));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Bulk Upload Reviews for a Campaign
+app.post("/api/admin/reviews/campaigns/:id/upload", authenticateToken, async (req, res) => {
+  const campId = parseInt(req.params.id);
+  const { reviews } = req.body;
+
+  let reviewList: string[] = [];
+  if (Array.isArray(reviews)) {
+    reviewList = reviews.map((r: any) => String(r).trim()).filter(Boolean);
+  } else if (typeof reviews === "string") {
+    reviewList = reviews
+      .split(/\r?\n/)
+      .map((r) => r.trim())
+      .filter((r) => r.length > 0);
+  }
+
+  if (reviewList.length === 0) {
+    return res.status(400).json({ error: "No valid review texts provided" });
+  }
+
+  try {
+    if (pool) {
+      for (const rev of reviewList) {
+        await pool.query("INSERT INTO review_pool (campaign_id, review_text, is_used) VALUES (?, ?, 0)", [campId, rev]);
+      }
+      return res.json({ success: true, count: reviewList.length });
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.serialize(() => {
+          const stmt = sqliteDb.prepare("INSERT INTO review_pool (campaign_id, review_text, is_used) VALUES (?, ?, 0)");
+          reviewList.forEach((rev) => {
+            stmt.run([campId, rev]);
+          });
+          stmt.finalize((err: any) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, count: reviewList.length });
+            resolve();
+          });
+        });
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    let nextId = fileData.reviews.length > 0 ? Math.max(...fileData.reviews.map((r: any) => r.id)) + 1 : 1;
+    reviewList.forEach((rev) => {
+      fileData.reviews.push({
+        id: nextId++,
+        campaign_id: campId,
+        review_text: rev,
+        is_used: 0,
+        used_at: null,
+        claimed_ip: null,
+        created_at: new Date().toISOString()
+      });
+    });
+    savePersistentReviewsData(fileData);
+    res.json({ success: true, count: reviewList.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Reset all reviews in a campaign (mark as unused)
+app.post("/api/admin/reviews/campaigns/:id/reset", authenticateToken, async (req, res) => {
+  const campId = parseInt(req.params.id);
+  try {
+    if (pool) {
+      await pool.query("UPDATE review_pool SET is_used = 0, used_at = NULL, claimed_ip = NULL WHERE campaign_id = ?", [campId]);
+      return res.json({ success: true, message: "All reviews reset to unused" });
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.run("UPDATE review_pool SET is_used = 0, used_at = NULL, claimed_ip = NULL WHERE campaign_id = ?", [campId], (err: any) => {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json({ success: true, message: "All reviews reset to unused" });
+          resolve();
+        });
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    fileData.reviews.forEach((r: any) => {
+      if (r.campaign_id === campId) {
+        r.is_used = 0;
+        r.used_at = null;
+        r.claimed_ip = null;
+      }
+    });
+    savePersistentReviewsData(fileData);
+    res.json({ success: true, message: "All reviews reset to unused" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint: Delete individual review
+app.delete("/api/admin/reviews/item/:id", authenticateToken, async (req, res) => {
+  const revId = parseInt(req.params.id);
+  try {
+    if (pool) {
+      await pool.query("DELETE FROM review_pool WHERE id = ?", [revId]);
+      return res.json({ success: true });
+    }
+
+    if (sqliteDb) {
+      return new Promise<void>((resolve) => {
+        sqliteDb.run("DELETE FROM review_pool WHERE id = ?", [revId], (err: any) => {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json({ success: true });
+          resolve();
+        });
+      });
+    }
+
+    const fileData = getPersistentReviewsData();
+    fileData.reviews = fileData.reviews.filter((r: any) => r.id !== revId);
+    savePersistentReviewsData(fileData);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Direct HTML route handler for swarnaamahal_review.html
+app.get("/swarnaamahal_review.html", (req, res) => {
+  const publicPath = path.join(process.cwd(), "public", "swarnaamahal_review.html");
+  const distPath = path.join(process.cwd(), "dist", "swarnaamahal_review.html");
+  if (fs.existsSync(publicPath)) {
+    return res.sendFile(publicPath);
+  } else if (fs.existsSync(distPath)) {
+    return res.sendFile(distPath);
+  }
+  res.status(404).send("Review page not found");
+});
 
 async function startServer() {
   // Vite middleware for development

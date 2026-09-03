@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import CourseManagerTab from '../../components/admin/CourseManagerTab';
+import ReviewManagerTab from '../../components/admin/ReviewManagerTab';
 
 export default function Dashboard() {
   const { logout, token } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('courses');
+  const [activeTab, setActiveTab] = useState('reviews');
   const [leads, setLeads] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [services, setServices] = useState([]);
@@ -83,7 +84,7 @@ export default function Dashboard() {
       <aside className="w-64 bg-white/5 border-r border-white/10 p-6 flex flex-col">
         <h1 className="text-2xl font-display font-bold uppercase mb-12 text-brand-orange">RV Admin</h1>
         <nav className="flex-1 space-y-3">
-          {['courses', 'certificates', 'leads', 'services', 'blogs', 'portfolio'].map((tab) => (
+          {['reviews', 'courses', 'certificates', 'leads', 'services', 'blogs', 'portfolio'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -91,7 +92,7 @@ export default function Dashboard() {
                 activeTab === tab ? 'bg-brand-orange text-black font-bold shadow-lg shadow-brand-orange/20' : 'text-white/50 hover:bg-white/10 hover:text-white'
               }`}
             >
-              {tab === 'courses' ? 'Masterclass Courses' : tab === 'certificates' ? 'Certificates' : tab}
+              {tab === 'reviews' ? '⭐ Google Reviews' : tab === 'courses' ? 'Masterclass Courses' : tab === 'certificates' ? 'Certificates' : tab}
             </button>
           ))}
         </nav>
@@ -104,8 +105,16 @@ export default function Dashboard() {
       <main className="flex-1 p-10 overflow-y-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-display font-bold uppercase">{activeTab === 'courses' ? 'Masterclass & Courses' : `${activeTab} Management`}</h2>
-            <p className="text-white/50 text-sm font-mono mt-1">Manage course offerings, prices, testimonials, and student registrations.</p>
+            <h2 className="text-3xl font-display font-bold uppercase">
+              {activeTab === 'reviews' ? 'Google Reviews Campaigns' : activeTab === 'courses' ? 'Masterclass & Courses' : `${activeTab} Management`}
+            </h2>
+            <p className="text-white/50 text-sm font-mono mt-1">
+              {activeTab === 'reviews' 
+                ? 'Manage business clients, upload one-time customer reviews, and copy review landing links.'
+                : activeTab === 'courses' 
+                ? 'Manage course offerings, prices, testimonials, and student registrations.'
+                : `Manage website ${activeTab} data.`}
+            </p>
           </div>
           <button 
             onClick={fetchData} 
@@ -114,6 +123,11 @@ export default function Dashboard() {
             Refresh
           </button>
         </div>
+
+        {/* Google Reviews Tab */}
+        {activeTab === 'reviews' && (
+          <ReviewManagerTab token={token || ''} />
+        )}
 
         {/* Masterclass Courses Tab */}
         {activeTab === 'courses' && (
